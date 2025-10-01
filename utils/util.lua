@@ -60,46 +60,21 @@ end
 
 -- 校验信令合法性
 -- sms_op_json: 信令
--- is_ws: 是否为websocket信令 默认为true
-function util.check_sms_op_json_sign(sms_op_json, ...)
+function util.check_sms_op(sms_op_json)
     if sms_op_json == nil then
-        log.error(LOG_TAG, "短信信令为nil")
+        log.error(LOG_TAG, "信令为nil")
         return false
     end
 
-    local is_ws = true
-    if select("#", ...) > 0 then
-        is_ws = select(1, ...)
-    end
-
-    if sms_op_json.sign == nil then
-        log.error(LOG_TAG, "短信信令缺少sign参数")
+    local current_time = os.time()
+    if sms_op_json.timestamp == nil then
+        log.error(LOG_TAG, "短信信令缺少timestamp参数")
         return false
     end
-
-    -- 只有websocket信令需要校验timestamp
-    if is_ws then
-        -- 校验timestamp合法性, 允许上下误差5分钟
-        local current_time = os.time()
-        if sms_op_json.timestamp == nil then
-            log.error(LOG_TAG, "短信信令缺少timestamp参数")
-            return false
-        end
-        if math.abs(current_time - sms_op_json.timestamp) > CONFIG.OP.MAX_TIMESTAMP_DIFF then
-            log.error(LOG_TAG, "短信信令timestamp不合法", "current_time: " .. tostring(current_time),
-                "sms_op_json.timestamp: " .. tostring(sms_op_json.timestamp))
-            return false
-        end
-    else
-        -- 短信信令不需要校验timestamp
-        -- 计算sign sha256(imei+设备密钥)，取前8位，大写字母
-        local sign = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
-        sign = string.sub(sign, 1, 8)
-        sign = string.upper(sign)
-        if sms_op_json.sign ~= sign then
-            log.error(LOG_TAG, "短信信令sign不合法", "calc sign: " .. sign, "sms_op_json.sign: " .. sms_op_json.sign)
-            return false
-        end
+    if math.abs(current_time - sms_op_json.timestamp) > CONFIG.OP.MAX_TIMESTAMP_DIFF then
+        log.error(LOG_TAG, "短信信令timestamp不合法", "current_time: " .. tostring(current_time),
+            "sms_op_json.timestamp: " .. tostring(sms_op_json.timestamp))
+        return false
     end
 
     return true
@@ -133,20 +108,61 @@ end
 function util.array_subtract(arr1, arr2)
     local result = {}
     local toRemove = {}
-    
+
     -- 构建要移除的元素集合
     for _, value in ipairs(arr2) do
         toRemove[value] = true
     end
-    
+
     -- 遍历第一个数组，只保留不在第二个数组中的元素
     for _, value in ipairs(arr1) do
         if not toRemove[value] then
             table.insert(result, value)
         end
     end
-    
+
     return result
+end
+
+-- 数组去重
+function util.deduplicate_array(arr)
+    local result = {}
+    local seen = {}
+
+    for _, value in ipairs(arr) do
+        if not seen[value] then
+            table.insert(result, value)
+            seen[value] = true
+        end
+    end
+
+    return result
+end
+
+-- 加密函数
+function util.encrypt_and_base64(data)
+    local key = CONFIG.CRYPTO.KEY
+    if key == nil then
+        key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
+        CONFIG.CRYPTO.KEY = key
+    end
+    -- 生成随机初始向量(IV)
+    -- IV长度必须等于密钥长度
+    local iv = crypto.base64_encode(crypto.trng(CONFIG.CRYPTO.KEY_LEN)):sub(1, CONFIG.CRYPTO.KEY_LEN)
+    local crypto_data = crypto.cipher_encrypt(CONFIG.CRYPTO.ALGORITHM, CONFIG.CRYPTO.PADDING, data, key, iv)
+    return iv .. crypto.base64_encode(crypto_data)
+end
+
+-- 解密函数
+function util.decrypt_and_base64(data)
+    local key = CONFIG.CRYPTO.KEY
+    if key == nil then
+        key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
+        CONFIG.CRYPTO.KEY = key
+    end
+    local iv = data:sub(1, CONFIG.CRYPTO.KEY_LEN)
+    local crypto_data = crypto.base64_decode(data:sub(CONFIG.CRYPTO.KEY_LEN + 1))
+    return crypto.cipher_decrypt(CONFIG.CRYPTO.ALGORITHM, CONFIG.CRYPTO.PADDING, crypto_data, key, iv)
 end
 
 return util

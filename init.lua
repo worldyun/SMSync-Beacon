@@ -30,7 +30,7 @@ local function load_smsync_beaco_key()
         else
             log.info(LOG_TAG, "设备密钥不存在, 生成新的设备密钥")
             local random_string = crypto.trng(16);
-            log.info(LOG_TAG, "随机字符串", random_string)
+            log.debug(LOG_TAG, "随机字符串", random_string)
             beaco_key = crypto.md5(random_string):sub(1, 12)
             fskv.set("CONFIG.SMSYNC.SMSYNC_BEACO_KEY", beaco_key)
             CONFIG.SMSYNC.SMSYNC_BEACO_KEY = beaco_key
@@ -74,6 +74,9 @@ local function load_smsync_config(config_key, default_value)
 end
 
 local function update_smsync_config(config_key_list)
+    -- 去重
+    log.debug(LOG_TAG, "配置更新", UTIL.table_to_str(config_key_list))
+    config_key_list = UTIL.deduplicate_array(config_key_list)
     -- 更新配置
     -- 遍历config_key_list 写入配置
     for _, config_key in ipairs(config_key_list) do
@@ -94,26 +97,26 @@ local function load_config()
     load_smsync_beaco_key()
     load_smsync_config("PHONE_NUM", CONFIG.SMSYNC.DEFAULT.PHONE_NUM)
     load_smsync_config("FWD_CHANNEL", CONFIG.SMSYNC.DEFAULT.FWD_CHANNEL)
-    load_smsync_config("WS_CONFIG.URL", CONFIG.SMSYNC.DEFAULT.WS_CONFIG.URL)
-    load_smsync_config("WS_CONFIG.ACCESS_KEY", CONFIG.SMSYNC.DEFAULT.WS_CONFIG.ACCESS_KEY)
+    load_smsync_config("WS_CONFIG", CONFIG.SMSYNC.DEFAULT.WS_CONFIG)
     load_smsync_config("SMS_FWD_LIST", CONFIG.SMSYNC.DEFAULT.SMS_FWD_LIST)
     load_smsync_config("FWD_ENABLE", CONFIG.SMSYNC.DEFAULT.FWD_ENABLE)
     load_smsync_config("NET_ENABLE", CONFIG.SMSYNC.DEFAULT.NET_ENABLE)
-    load_smsync_config("BLACK_LIST", CONFIG.SMSYNC.DEFAULT.BLACK_LIST)
+    load_smsync_config("BLACKLIST", CONFIG.SMSYNC.DEFAULT.BLACKLIST)
     log.info(LOG_TAG, "load config 加载配置完成")
     -- 发布配置加载完成事件
     sys.publish(CONFIG.EVENT_ENUM.CONFIG.LOADED)
     -- 订阅配置更新事件
-    sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.UPDATED, update_smsync_config)
+    sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.CHANGED, update_smsync_config)
 end
 
 function init.init()
     init_log()
     init_fskv()
     load_config()
+    log.debug(LOG_TAG, json.encode(CONFIG.SMSYNC))
     -- 监听配置重新加载事件
     sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.RELOAD, load_config)
-    require("sms_service").init()
+    SMS_SERVICE.init()
 end
 
 return init

@@ -1,0 +1,119 @@
+local init = {}
+
+local LOG_TAG = "INIT"
+
+local function init_log()
+    -- 加载日志功能模块并设置日志输出等级与风格
+    log.setLevel(CONFIG.LOG.LEVEL)
+    log.style(CONFIG.LOG.STYLE)
+end
+
+local function init_fskv()
+    -- 初始化kv数据库 fskv 失败则重启
+    log.info(LOG_TAG, "init fskv 初始化kv数据库统")
+    if fskv.init() then
+        log.info(LOG_TAG, "kv数据库初始化成功")
+    else
+        log.info(LOG_TAG, "kv数据库初始化失败, 重启中...")
+        sys.restart()
+    end
+end
+
+local function load_smsync_beaco_key()
+    -- 判断SMSYNC_BEACO_KEY是否存在或CONFIG中默认值是否为nil, 不存在则生成一个新的
+    if CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY == nil then
+        log.info(LOG_TAG, "配置文件中未设置设备密钥, 尝试加载已存在的设备密钥")
+        local beaco_key = fskv.get("CONFIG.SMSYNC.SMSYNC_BEACO_KEY")
+        if beaco_key then
+            CONFIG.SMSYNC.SMSYNC_BEACO_KEY = beaco_key
+            log.info(LOG_TAG, "加载已存在的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
+        else
+            log.info(LOG_TAG, "设备密钥不存在, 生成新的设备密钥")
+            local random_string = crypto.trng(16);
+            log.info(LOG_TAG, "随机字符串", random_string)
+            beaco_key = crypto.md5(random_string):sub(1, 12)
+            fskv.set("CONFIG.SMSYNC.SMSYNC_BEACO_KEY", beaco_key)
+            CONFIG.SMSYNC.SMSYNC_BEACO_KEY = beaco_key
+            log.info(LOG_TAG, "生成新的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
+        end
+    else
+        -- 校验设备密钥长度与合法性
+        if string.len(CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY) ~= 12 then
+            log.error(LOG_TAG, "设备密钥长度错误, 请检查配置文件")
+            sys.restart()
+        end
+        if not string.match(CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY, "^[a-zA-Z0-9]+$") then
+            log.error(LOG_TAG, "设备密钥格式错误, 请检查配置文件")
+            sys.restart()
+        end
+        CONFIG.SMSYNC.SMSYNC_BEACO_KEY = CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY
+        log.info(LOG_TAG, "使用配置文件中已设置的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
+    end
+end
+
+local function load_smsync_config(config_key, default_value)
+    local value = fskv.get("CONFIG.SMSYNC." .. config_key)
+    if value ~= nil then
+        CONFIG.SMSYNC[config_key] = value
+        -- table类型需要序列化
+        if type(default_value) == "table" then
+            log.info(LOG_TAG, "加载已存在的配置", "CONFIG.SMSYNC." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
+        else
+            log.info(LOG_TAG, "加载已存在的配置", "CONFIG.SMSYNC." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
+        end
+    else
+        CONFIG.SMSYNC[config_key] = default_value
+        -- table类型需要序列化
+        if type(default_value) == "table" then
+            log.info(LOG_TAG, "使用默认配置", "CONFIG.SMSYNC.DEFAULT." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
+        else
+            log.info(LOG_TAG, "使用默认配置", "CONFIG.SMSYNC.DEFAULT." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
+        end
+    end
+
+end
+
+local function update_smsync_config(config_key_list)
+    -- 更新配置
+    -- 遍历config_key_list 写入配置
+    for _, config_key in ipairs(config_key_list) do
+        fskv.set("CONFIG.SMSYNC." .. config_key, CONFIG.SMSYNC[config_key])
+        if type(CONFIG.SMSYNC[config_key]) == "table" then
+            log.info(LOG_TAG, "更新配置", "CONFIG.SMSYNC." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
+        else
+            log.info(LOG_TAG, "更新配置", "CONFIG.SMSYNC." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
+        end
+    end
+end
+
+local function load_config()
+    -- 加载配置
+    log.info(LOG_TAG, "load config 加载配置")
+    -- 发布配置加载事件
+    sys.publish(CONFIG.EVENT_ENUM.CONFIG.LOADING)
+    load_smsync_beaco_key()
+    load_smsync_config("PHONE_NUM", CONFIG.SMSYNC.DEFAULT.PHONE_NUM)
+    load_smsync_config("FWD_CHANNEL", CONFIG.SMSYNC.DEFAULT.FWD_CHANNEL)
+    load_smsync_config("WS_CONFIG.URL", CONFIG.SMSYNC.DEFAULT.WS_CONFIG.URL)
+    load_smsync_config("WS_CONFIG.ACCESS_KEY", CONFIG.SMSYNC.DEFAULT.WS_CONFIG.ACCESS_KEY)
+    load_smsync_config("SMS_FWD_LIST", CONFIG.SMSYNC.DEFAULT.SMS_FWD_LIST)
+    load_smsync_config("FWD_ENABLE", CONFIG.SMSYNC.DEFAULT.FWD_ENABLE)
+    load_smsync_config("NET_ENABLE", CONFIG.SMSYNC.DEFAULT.NET_ENABLE)
+    load_smsync_config("BLACK_LIST", CONFIG.SMSYNC.DEFAULT.BLACK_LIST)
+    log.info(LOG_TAG, "load config 加载配置完成")
+    -- 发布配置加载完成事件
+    sys.publish(CONFIG.EVENT_ENUM.CONFIG.LOADED)
+    -- 订阅配置更新事件
+    sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.UPDATED, update_smsync_config)
+end
+
+function init.init()
+    init_log()
+    init_fskv()
+    load_config()
+    -- 监听配置重新加载事件
+    sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.RELOAD, load_config)
+    require("sms_service").init()
+end
+
+return init

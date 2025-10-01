@@ -67,13 +67,13 @@ function util.check_sms_op(sms_op_json)
     end
 
     local current_time = os.time()
-    if sms_op_json.timestamp == nil then
+    if sms_op_json[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP] == nil then
         log.error(LOG_TAG, "短信信令缺少timestamp参数")
         return false
     end
-    if math.abs(current_time - sms_op_json.timestamp) > CONFIG.OP.MAX_TIMESTAMP_DIFF then
-        log.error(LOG_TAG, "短信信令timestamp不合法", "current_time: " .. tostring(current_time),
-            "sms_op_json.timestamp: " .. tostring(sms_op_json.timestamp))
+    if math.abs(current_time - sms_op_json[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP]) > CONFIG.OP.MAX_TIMESTAMP_DIFF then
+        log.error(LOG_TAG, "短信信令timestamp不合法", "当前时间: " .. tostring(current_time),
+            "信令时间: " .. tostring(sms_op_json[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP]))
         return false
     end
 

@@ -22,13 +22,13 @@ end
 local function load_smsync_beaco_key()
     -- 判断SMSYNC_BEACO_KEY是否存在或CONFIG中默认值是否为nil, 不存在则生成一个新的
     if CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY == nil then
-        log.info(LOG_TAG, "配置文件中未设置设备密钥, 尝试加载已存在的设备密钥")
+        log.info(LOG_TAG, "配置文件中未设置设备密钥, 尝试加载KVFS中存储的设备密钥")
         local beaco_key = fskv.get("CONFIG.SMSYNC.SMSYNC_BEACO_KEY")
         if beaco_key then
             CONFIG.SMSYNC.SMSYNC_BEACO_KEY = beaco_key
-            log.info(LOG_TAG, "加载已存在的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
+            log.info(LOG_TAG, "加载KVFS中存储的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
         else
-            log.info(LOG_TAG, "设备密钥不存在, 生成新的设备密钥")
+            log.info(LOG_TAG, "KVFS中未存储设备密钥, 正在生成新的设备密钥")
             local random_string = crypto.trng(16);
             log.debug(LOG_TAG, "随机字符串", random_string)
             beaco_key = crypto.md5(random_string):sub(1, 12)
@@ -57,9 +57,9 @@ local function load_smsync_config(config_key, default_value)
         CONFIG.SMSYNC[config_key] = value
         -- table类型需要序列化
         if type(default_value) == "table" then
-            log.info(LOG_TAG, "加载已存在的配置", "CONFIG.SMSYNC." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
+            log.info(LOG_TAG, "加载KVFS中存储的配置", "CONFIG.SMSYNC." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
         else
-            log.info(LOG_TAG, "加载已存在的配置", "CONFIG.SMSYNC." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
+            log.info(LOG_TAG, "加载KVFS中存储的配置", "CONFIG.SMSYNC." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
         end
     else
         CONFIG.SMSYNC[config_key] = default_value

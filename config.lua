@@ -37,8 +37,8 @@ CONFIG.LOG = {
 -- 信令配置
 CONFIG.OP = {
     MAX_TIMESTAMP_DIFF = 300,   -- 信令时间戳允许的最大时间差(秒)
-    OP_CODE_START = "#*#*",     -- 信令起始
-    OP_CODE_END = "*#*#",       -- 信令结束
+    OP_CODE_START = "#*",     -- 信令起始
+    OP_CODE_END = "*#",       -- 信令结束
 }
 
 CONFIG.CRYPTO = {
@@ -50,50 +50,49 @@ CONFIG.CRYPTO = {
 
 -- 短信信令操作码枚举
 CONFIG.SMS_OP_CODE_ENUM = {
-    SET_CONFIG = "setConfig",   -- 设置配置
-    GET_CONFIG = "getConfig",   -- 获取配置
-    SET_CHANNEL = "setChannel", -- 设置转发通道
-    SEND_SMS = "sendSms",       -- 发送短信
+    SET_CONFIG = "sC",      -- 设置配置
+    GET_CONFIG = "gC",      -- 获取配置
+    SET_CHANNEL = "sN",     -- 设置转发通道
+    SEND_SMS = "sS",        -- 发送短信
 }
 
 -- 短信信令操作码SET_CONFIG的参数枚举
 CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM = {
-    FWD_ENABLE = "fwdEnable",           -- 是否启用转发功能
-    NET_ENABLE = "netEnable",           -- 是否启用网络功能
-    ADD_BLACKLIST = "addBlackList",     -- 添加黑名单
-    RM_BLACKLIST = "rmBlackList",       -- 移除黑名单
-    CLEAR_BLACKLIST = "clearBlackList", -- 清空黑名单
+    FWD_ENABLE = "fE",              -- 是否启用转发功能
+    NET_ENABLE = "nE",              -- 是否启用网络功能
+    ADD_BLACKLIST = "aBL",          -- 添加黑名单
+    RM_BLACKLIST = "rBL",           -- 移除黑名单
+    CLEAR_BLACKLIST = "cBL",        -- 清空黑名单
 }
 
 -- 短信信令操作码GET_CONFIG的参数枚举
 CONFIG.SMS_OP_GET_CONFIG_PARAM_ENUM = {
-    FWD_ENABLE = "fwdEnable", -- 是否启用转发功能
-    NET_ENABLE = "netEnable", -- 是否启用网络功能
-    BLACKLIST = "blackList",  -- 黑名单列表
-    FWD_CHANNEL = "fwdChannel", -- 转发通道
-    PHONE_NUM = "phoneNum",   -- 自身电话号码
-    SMS_FWD_LIST = "smsFwdList", -- 短信转发目标列表
-    WS_CONFIG = "wsConfig",   -- WebSocket配置
+    FWD_ENABLE = "fE",      -- 是否启用转发功能
+    NET_ENABLE = "nE",      -- 是否启用网络功能
+    BLACKLIST = "bL",       -- 黑名单列表
+    FWD_CHANNEL = "fN",     -- 转发通道
+    PHONE_NUM = "pN",       -- 自身电话号码
+    SMS_FWD_LIST = "sFL",   -- 短信转发目标列表
+    WS_CONFIG = "ws",       -- WebSocket配置
 }
 
 -- 短信信令操作码SET_CHANNEL的参数枚举
 CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM = {
-    PHONE_NUM = "phoneNum",      -- 自身电话号码
-    FWD_CHANNEL = "fwdChannel",  -- 转发通道 ws-通过WebSocket同步, sms-通过短信同步
-    WS_CONFIG = "wsConfig",      -- WebSocket配置
-    SMS_FWD_LIST = "smsFwdList", -- 短信转发目标列表
+    PHONE_NUM = "pN",       -- 自身电话号码
+    FWD_CHANNEL = "fN",     -- 转发通道 ws-通过WebSocket同步, sms-通过短信同步
+    WS_CONFIG = "ws",       -- WebSocket配置
+    SMS_FWD_LIST = "sFL",   -- 短信转发目标列表
 }
 
 -- 短信信令操作码SEND_SMS的参数枚举
 CONFIG.SMS_OP_SEND_SMS_PARAM_ENUM = {
-    DES_NUM = "desNum",  -- 目标电话号码
-    CONTENT = "content", -- 短信内容
+    DES_NUM = "dN",     -- 目标电话号码
+    CONTENT = "ct",     -- 短信内容
 }
 
 -- 短信信令通用参数枚举
 CONFIG.SMS_OP_COMMON_PARAM_ENUM = {
-    SIGN = "sign",          -- 签名 sha256(imei+设备密钥)，取前8位，大写字母。每一条信令都必须携带sign
-    TIMESTAMP = "timestamp",
+    TIMESTAMP = "t",
     OP = "op",
 }
 

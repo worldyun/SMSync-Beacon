@@ -14,7 +14,7 @@ end
 
 -- 短信信令setConfig的实现
 local function op_set_config_impl(phone, sms_op_json)
-    log.info(LOG_TAG, "收到短信信令setConfig")
+    log.info(LOG_TAG, "信令操作码: ", CONFIG.SMS_OP_CODE_ENUM.SET_CONFIG, "解释: 设置配置")
     local config_key_list = {}
     -- 转发使能
     if sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.FWD_ENABLE] then
@@ -85,11 +85,11 @@ end
 
 -- 短信信令getConfig的实现
 local function op_get_config_impl(phone, sms_op_json)
-    log.info(LOG_TAG, "收到短信信令getConfig")
+    log.info(LOG_TAG, "信令操作码: ", CONFIG.SMS_OP_CODE_ENUM.GET_CONFIG, "解释: 获取配置")
     local response = {}
     for key, value in pairs(CONFIG.SMS_OP_GET_CONFIG_PARAM_ENUM) do
         response[value] = CONFIG.SMSYNC[key]
-        log.debug(LOG_TAG, "getConfig param", value, CONFIG.SMSYNC[key])
+        log.debug(LOG_TAG, "getConfig 相应字段", value, CONFIG.SMSYNC[key])
     end
     local response_json_string = json.encode(response)
     if response_json_string == nil then
@@ -166,29 +166,27 @@ local function sms_service_impl(phone, sms)
 end
 
 local function test()
-    local test_data = {
-        op = "getConfig",
-        timestamp = os.time(),
-    }
+    -- 测试数据
+    local test_data = {}
+    test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.OP] = CONFIG.SMS_OP_CODE_ENUM.GET_CONFIG
+    test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP] = os.time()
     local test_data_json_string = json.encode(test_data)
     log.info(LOG_TAG, "测试数据", test_data_json_string)
     local test_data_crypto_string = UTIL.encrypt_and_base64(test_data_json_string)
     log.info(LOG_TAG, "测试数据密文", test_data_crypto_string)
-    sms_service_impl("13800000000", "#*#*" .. test_data_crypto_string .. "*#*#")
+    sms_service_impl("13800000000", CONFIG.OP.OP_CODE_START .. test_data_crypto_string .. CONFIG.OP.OP_CODE_END)
 
-    test_data = {
-        op = "setConfig",
-        timestamp = os.time(),
-        fwdEnable = true,
-        netEnable = true,
-        addBlackList = { "13800000009" },
-        rmBlackList = {"13800000008"},
-    }
+    test_data = {}
+    test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.OP] = CONFIG.SMS_OP_CODE_ENUM.SET_CONFIG
+    test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP] = os.time()
+    test_data[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.FWD_ENABLE] = true
+    test_data[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.NET_ENABLE] = false
+    test_data[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.ADD_BLACKLIST] = {"138*"}
     test_data_json_string = json.encode(test_data)
     log.info(LOG_TAG, "测试数据", test_data_json_string)
     test_data_crypto_string = UTIL.encrypt_and_base64(test_data_json_string)
     log.info(LOG_TAG, "测试数据密文", test_data_crypto_string)
-    sms_service_impl("13800000000", "#*#*" .. test_data_crypto_string .. "*#*#")
+    sms_service_impl("13800000000", CONFIG.OP.OP_CODE_START .. test_data_crypto_string .. CONFIG.OP.OP_CODE_END)
 end
 
 function sms_service.init()

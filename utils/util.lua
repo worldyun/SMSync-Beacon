@@ -217,6 +217,9 @@ end
 
 -- 判断table是否为空
 function util.table_is_empty(t)
+    if t == nil then
+        return true
+    end
     return util.table_length(t) == 0
 end
 

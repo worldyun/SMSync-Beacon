@@ -3,7 +3,7 @@ local sms_service = {}
 local LOG_TAG = "SMS_SERVICE"
 
 -- 发送短信函数封装
-local function send_sms(phone, sms)
+function sms_service.send_sms(phone, sms)
     -- 发送短信
     if CONFIG.LOG.LEVEL == "DEBUG" then
         log.debug(LOG_TAG, "测试发送短信, 未真正发送", phone, "长度: " .. string.len(sms), sms)
@@ -24,7 +24,6 @@ local function op_set_config_impl(phone, sms_op_json)
             log.error(LOG_TAG,
                 "参数FWD_ENABLE类型错误, 期望boolean, 实际" .. type(sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.FWD_ENABLE]))
         else
-            -- CONFIG.SMSYNC.FWD_ENABLE = sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.FWD_ENABLE]
             config_changed_table["FWD_ENABLE"] = sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.FWD_ENABLE]
         end
     end
@@ -35,7 +34,6 @@ local function op_set_config_impl(phone, sms_op_json)
             log.error(LOG_TAG,
                 "参数NET_ENABLE类型错误, 期望boolean, 实际" .. type(sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.NET_ENABLE]))
         else
-            -- CONFIG.SMSYNC.NET_ENABLE = sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.NET_ENABLE]
             config_changed_table["NET_ENABLE"] = sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.NET_ENABLE]
         end
     end
@@ -47,8 +45,6 @@ local function op_set_config_impl(phone, sms_op_json)
                 "参数ADD_BLACKLIST类型错误, 期望table, 实际" ..
                 type(sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.ADD_BLACKLIST]))
         else
-            -- CONFIG.SMSYNC.BLACKLIST = UTIL.merge_and_deduplicate(CONFIG.SMSYNC.BLACKLIST,
-            --     sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.ADD_BLACKLIST])
             config_changed_table["BLACKLIST"] = UTIL.merge_and_deduplicate(CONFIG.SMSYNC.BLACKLIST,
                 sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.ADD_BLACKLIST])
         end
@@ -61,8 +57,6 @@ local function op_set_config_impl(phone, sms_op_json)
                 "参数RM_BLACKLIST类型错误, 期望table, 实际" ..
                 type(sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.RM_BLACKLIST]))
         else
-            -- CONFIG.SMSYNC.BLACKLIST = UTIL.array_subtract(CONFIG.SMSYNC.BLACKLIST,
-            --     sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.RM_BLACKLIST])
             if config_changed_table["BLACKLIST"] ~= nil then
                 config_changed_table["BLACKLIST"] = UTIL.array_subtract(config_changed_table["BLACKLIST"],
                     sms_op_json[CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM.RM_BLACKLIST])
@@ -135,7 +129,7 @@ local function op_get_config_impl(phone, sms_op_json)
     local encrypt_response_json_string = UTIL.encrypt_and_base64(response_json_string)
     local sms_response = "#*#*" .. encrypt_response_json_string .. "*#*#"
     -- 发送短信响应
-    send_sms(phone, sms_response)
+    sms_service.send_sms(phone, sms_response)
 end
 
 -- 短信信令setChannel的实现
@@ -146,15 +140,15 @@ local function op_set_channel_impl(phone, sms_op_json)
         log.error(LOG_TAG, "参数FWD_CHANNEL或PHONE_NUM为空")
         return
     end
-    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] ~= "ws" and sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] ~= "sms" then
+    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] ~= CONFIG.FWD_CHANNEL_ENUM.WS and sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] ~= CONFIG.FWD_CHANNEL_ENUM.SMS then
         log.error(LOG_TAG, "参数FWD_CHANNEL错误, 仅支持ws和sms")
         return
     end
-    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == "ws" and sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.WS_CONFIG] == nil then
+    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == CONFIG.FWD_CHANNEL_ENUM.WS and sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.WS_CONFIG] == nil then
         log.error(LOG_TAG, "参数WS_CONFIG为空")
         return
     end
-    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == "sms" and (sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST] == nil or #sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST] == 0) then
+    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == CONFIG.FWD_CHANNEL_ENUM.SMS and (sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST] == nil or #sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST] == 0) then
         log.error(LOG_TAG, "参数SMS_FWD_LIST为空")
         return
     end
@@ -175,7 +169,7 @@ local function op_set_channel_impl(phone, sms_op_json)
     -- 转发通道
     config_changed_table["FWD_CHANNEL"] = sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL]
     -- WebSocket配置
-    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == "ws" then
+    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == CONFIG.FWD_CHANNEL_ENUM.WS then
         if type(sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.WS_CONFIG]) ~= "string" then
             log.error(LOG_TAG,
                 "参数WS_CONFIG类型错误, 期望string, 实际" ..
@@ -190,7 +184,7 @@ local function op_set_channel_impl(phone, sms_op_json)
         config_changed_table["NET_ENABLE"] = true
     end
     -- 短信转发列表
-    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == "sms" then
+    if sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] == CONFIG.FWD_CHANNEL_ENUM.SMS then
         if type(sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST]) ~= "table" then
             log.error(LOG_TAG,
                 "参数SMS_FWD_LIST类型错误, 期望table, 实际" .. type(sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST])
@@ -209,6 +203,8 @@ local function op_set_channel_impl(phone, sms_op_json)
             end
         end
         config_changed_table["SMS_FWD_LIST"] = sms_op_json[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST]
+        -- 关闭网络
+        config_changed_table["NET_ENABLE"] = false
     end
 
     -- 发布配置更新事件
@@ -232,7 +228,7 @@ local function op_send_sms_impl(phone, sms_op_json)
         return
     end
     -- 发送短信
-    send_sms(des_num, content)
+    sys.publish(CONFIG.EVENT_ENUM.FWD_SERVICE.FWD, CONFIG.FWD_DIRECTION_ENUM.DOWN, content, des_num, phone)
 end
 
 -- 操作码分发表
@@ -298,6 +294,7 @@ local function sms_service_impl(phone, sms)
         return
     else
         log.info(LOG_TAG, "收到普通短信", phone, "长度: " .. string.len(sms), sms)
+        sys.publish(CONFIG.EVENT_ENUM.FWD_SERVICE.FWD, CONFIG.FWD_DIRECTION_ENUM.UP, sms, nil, phone)
     end
 end
 
@@ -359,7 +356,7 @@ local function test()
     test_data = {}
     test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.OP] = CONFIG.SMS_OP_CODE_ENUM.SET_CHANNEL
     test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP] = os.time()
-    test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] = "ws"
+    test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] = CONFIG.FWD_CHANNEL_ENUM.WS
     test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.WS_CONFIG] = "testAccessKey@ws://test.com/websocket"
     test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.PHONE_NUM] = "13800000000"
     -- test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST] = { "13800000000" }
@@ -372,6 +369,11 @@ local function test()
     test_data_crypto_string = UTIL.encrypt_and_base64(test_data_json_string)
     log.info(LOG_TAG, "测试数据密文", test_data_crypto_string)
     sms_service_impl("13800000000", CONFIG.OP.OP_CODE_START .. test_data_crypto_string .. CONFIG.OP.OP_CODE_END)
+
+    -- 普通短信
+    sms_service_impl("13800000000", "测试短信")
+    sms_service_impl("13900000000", "测试短信")
+    sms_service_impl("13900000000", "测试短信中国联通")
 end
 
 function sms_service.init()
@@ -381,7 +383,9 @@ function sms_service.init()
         sms_service_impl(phone, sms)
     end)
 
-    test()
+    if CONFIG.LOG.LEVEL == "DEBUG" then
+        test()
+    end
 end
 
 return sms_service

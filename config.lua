@@ -98,6 +98,18 @@ CONFIG.SMS_OP_COMMON_PARAM_ENUM = {
     OP = "op",
 }
 
+-- 转发通道枚举
+CONFIG.FWD_CHANNEL_ENUM = {
+    SMS = "sms",    -- 短信转发
+    WS = "ws",      -- WebSocket转发
+}
+
+-- 转发方向枚举
+CONFIG.FWD_DIRECTION_ENUM = {
+    UP = "up",      -- 上行 接收第三方短信转发至控制端
+    DOWN = "down",  -- 下行 接收控制端信息转发至目标号码
+}
+
 -- 事件枚举
 CONFIG.EVENT_ENUM = {
     CONFIG = {
@@ -105,7 +117,15 @@ CONFIG.EVENT_ENUM = {
         LOADED = "CONFIG_LOADED",   -- 配置加载完成
         RELOAD = "CONFIG_RELOAD",   -- 配置重新加载
         CHANGED = "CONFIG_CHANGED", -- 配置已修改
-    }
+    },
+    FWD_SERVICE = {
+        FWD = "FWD_SERVICE_FWD",        -- 转发服务事件
+    },
+    WS_SERVICE = {
+        CONNECT = "WS_SERVICE_CONNECT",                 -- WebSocket服务连接事件
+        DISCONNECT = "WS_SERVICE_DISCONNECT",           -- WebSocket服务断开连接事件
+        CONFIG_CHANGED = "WS_SERVICE_CONFIG_CHANGED",   -- WebSocket服务配置已修改
+    },
 }
 
 -- 压缩字典 用于信令压缩 起始值为1

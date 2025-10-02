@@ -1,6 +1,7 @@
 _G.CONFIG = require "config"
 _G.UTIL = require "util"
 _G.SMS_SERVICE = require "sms_service"
+_G.FWD_SERVICE = require "fwd_service"
 _G.sys = require("sys")
 
 PROJECT = "SMSync-Beaco" -- 项目名称

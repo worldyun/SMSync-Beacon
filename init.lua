@@ -87,6 +87,9 @@ local function update_smsync_config(config_changed_table)
         else
             log.info(LOG_TAG, "更新配置", "CONFIG.SMSYNC." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
         end
+        if config_key == "WS_CONFIG" then
+            sys.publish(CONFIG.EVENT_ENUM.WS_SERVICE.CONFIG_CHANGED)
+        end
     end
 end
 
@@ -117,6 +120,7 @@ function init.init()
     sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.RELOAD, load_config)
     sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.CHANGED, update_smsync_config)
     SMS_SERVICE.init()
+    FWD_SERVICE.init()
 end
 
 return init

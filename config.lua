@@ -46,7 +46,7 @@ CONFIG.CRYPTO = {
     ALGORITHM = "AES-128-CBC",  -- 加密算法
     KEY_LEN = 16,               -- 密钥长度
     PADDING = "PKCS7",          -- 填充方式
-    KEY = nil,                  -- 加密密钥, 16字节, 可不设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
+    KEY = nil,                  -- 加密密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
 }
 
 -- 短信信令操作码枚举

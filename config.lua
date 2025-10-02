@@ -30,7 +30,7 @@ CONFIG.SMSYNC = {
 
 -- 日志配置
 CONFIG.LOG = {
-    LEVEL = "DEBUG",       -- 日志等级 SILENT, DEBUG, INFO, WARN, ERROR, FATAL   0~5
+    LEVEL = "INFO",       -- 日志等级 SILENT, DEBUG, INFO, WARN, ERROR, FATAL   0~5
     STYLE = 1,            -- 日志风格
 }
 

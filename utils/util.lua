@@ -165,4 +165,60 @@ function util.decrypt_and_base64(data)
     return crypto.cipher_decrypt(CONFIG.CRYPTO.ALGORITHM, CONFIG.CRYPTO.PADDING, crypto_data, key, iv)
 end
 
+-- 压缩函数
+-- data: 待压缩的数据 string类型
+function util.compress(data)
+    -- 根据压缩字典进行压缩 一次替换
+    local compressed_data = data
+    for index, value in pairs(CONFIG.COMPRESS_DICT) do
+        compressed_data = string.gsub(compressed_data,value,string.char(index))
+    end
+    return compressed_data
+end
+
+-- 解压函数
+-- data: 待解压的数据 string类型
+function util.decompress(data)
+    -- 根据压缩字典进行解压 一次替换
+    local decompressed_data = data
+    for index, value in pairs(CONFIG.COMPRESS_DICT) do
+        decompressed_data = string.gsub(decompressed_data,string.char(index),value)
+    end
+    return decompressed_data
+end
+
+-- 校验号码合法性
+function util.check_phone_number(phone_number)
+    if phone_number == nil or type(phone_number) ~= "string" then
+        return false
+    end
+
+    local pattern = "^[0-9]+$"
+    local is_valid = string.match(phone_number, pattern)
+    if is_valid == nil then
+        return false
+    end
+    return true
+end
+
+-- 校验ws_config合法性
+function util.check_ws_config(ws_config)
+    return string.match(ws_config, "^[^@]+@ws://[^@]+$") ~= nil
+end
+
+-- 获取table长度
+function util.table_length(t)
+    local count = 0
+    for _ in pairs(t) do
+        count = count + 1
+    end
+    return count
+end
+
+-- 判断table是否为空
+function util.table_is_empty(t)
+    return util.table_length(t) == 0
+end
+
+
 return util

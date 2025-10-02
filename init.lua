@@ -73,13 +73,14 @@ local function load_smsync_config(config_key, default_value)
 
 end
 
-local function update_smsync_config(config_key_list)
-    -- 去重
-    log.debug(LOG_TAG, "配置更新", UTIL.table_to_str(config_key_list))
-    config_key_list = UTIL.deduplicate_array(config_key_list)
+local function update_smsync_config(config_changed_table)
+    log.info(LOG_TAG, "update config 更新配置")
+    log.debug(LOG_TAG, "配置更新", json.encode(config_changed_table))
     -- 更新配置
-    -- 遍历config_key_list 写入配置
-    for _, config_key in ipairs(config_key_list) do
+    -- 遍历config_changed_table 写入配置
+    for config_key, config_value in pairs(config_changed_table) do
+        CONFIG.SMSYNC[config_key] = config_value
+        -- 持久化配置
         fskv.set("CONFIG.SMSYNC." .. config_key, CONFIG.SMSYNC[config_key])
         if type(CONFIG.SMSYNC[config_key]) == "table" then
             log.info(LOG_TAG, "更新配置", "CONFIG.SMSYNC." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
@@ -105,8 +106,6 @@ local function load_config()
     log.info(LOG_TAG, "load config 加载配置完成")
     -- 发布配置加载完成事件
     sys.publish(CONFIG.EVENT_ENUM.CONFIG.LOADED)
-    -- 订阅配置更新事件
-    sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.CHANGED, update_smsync_config)
 end
 
 function init.init()
@@ -116,6 +115,7 @@ function init.init()
     log.debug(LOG_TAG, json.encode(CONFIG.SMSYNC))
     -- 监听配置重新加载事件
     sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.RELOAD, load_config)
+    sys.subscribe(CONFIG.EVENT_ENUM.CONFIG.CHANGED, update_smsync_config)
     SMS_SERVICE.init()
 end
 

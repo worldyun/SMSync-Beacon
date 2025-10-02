@@ -39,6 +39,7 @@ CONFIG.OP = {
     MAX_TIMESTAMP_DIFF = 300,   -- 信令时间戳允许的最大时间差(秒)
     OP_CODE_START = "#*",     -- 信令起始
     OP_CODE_END = "*#",       -- 信令结束
+    COMPRESS = true,          -- 信令压缩使能
 }
 
 CONFIG.CRYPTO = {
@@ -50,49 +51,50 @@ CONFIG.CRYPTO = {
 
 -- 短信信令操作码枚举
 CONFIG.SMS_OP_CODE_ENUM = {
-    SET_CONFIG = "sC",      -- 设置配置
-    GET_CONFIG = "gC",      -- 获取配置
-    SET_CHANNEL = "sN",     -- 设置转发通道
-    SEND_SMS = "sS",        -- 发送短信
+    SET_CONFIG = "setConfig",      -- 设置配置
+    GET_CONFIG = "getConfig",      -- 获取配置
+    SET_CHANNEL = "setChannel",     -- 设置转发通道
+    SEND_SMS = "sendSms",        -- 发送短信
 }
 
 -- 短信信令操作码SET_CONFIG的参数枚举
 CONFIG.SMS_OP_SET_CONFIG_PARAM_ENUM = {
-    FWD_ENABLE = "fE",              -- 是否启用转发功能
-    NET_ENABLE = "nE",              -- 是否启用网络功能
-    ADD_BLACKLIST = "aBL",          -- 添加黑名单
-    RM_BLACKLIST = "rBL",           -- 移除黑名单
-    CLEAR_BLACKLIST = "cBL",        -- 清空黑名单
+    FWD_ENABLE = "fwdEnable",              -- 是否启用转发功能
+    NET_ENABLE = "netEnable",              -- 是否启用网络功能
+    ADD_BLACKLIST = "addBlackList",          -- 添加黑名单
+    RM_BLACKLIST = "rmBlackList",           -- 移除黑名单
+    CLEAR_BLACKLIST = "clearBlackList",        -- 清空黑名单
 }
 
 -- 短信信令操作码GET_CONFIG的参数枚举
 CONFIG.SMS_OP_GET_CONFIG_PARAM_ENUM = {
-    FWD_ENABLE = "fE",      -- 是否启用转发功能
-    NET_ENABLE = "nE",      -- 是否启用网络功能
-    BLACKLIST = "bL",       -- 黑名单列表
-    FWD_CHANNEL = "fN",     -- 转发通道
-    PHONE_NUM = "pN",       -- 自身电话号码
-    SMS_FWD_LIST = "sFL",   -- 短信转发目标列表
-    WS_CONFIG = "ws",       -- WebSocket配置
+    CONFIG_LIST = "configList",     -- 配置列表
+    FWD_ENABLE = "fwdEnable",      -- 是否启用转发功能
+    NET_ENABLE = "netEnable",      -- 是否启用网络功能
+    BLACKLIST = "blacklist",       -- 黑名单列表
+    FWD_CHANNEL = "fwdChannel",     -- 转发通道
+    PHONE_NUM = "phoneNum",       -- 自身电话号码
+    SMS_FWD_LIST = "smsFwdList",   -- 短信转发目标列表
+    WS_CONFIG = "wsConfig",       -- WebSocket配置
 }
 
 -- 短信信令操作码SET_CHANNEL的参数枚举
 CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM = {
-    PHONE_NUM = "pN",       -- 自身电话号码
-    FWD_CHANNEL = "fN",     -- 转发通道 ws-通过WebSocket同步, sms-通过短信同步
-    WS_CONFIG = "ws",       -- WebSocket配置
-    SMS_FWD_LIST = "sFL",   -- 短信转发目标列表
+    PHONE_NUM = "phoneNum",       -- 自身电话号码
+    FWD_CHANNEL = "fwdChannel",     -- 转发通道 ws-通过WebSocket同步, sms-通过短信同步
+    WS_CONFIG = "wsConfig",       -- WebSocket配置
+    SMS_FWD_LIST = "smsFwdList",   -- 短信转发目标列表
 }
 
 -- 短信信令操作码SEND_SMS的参数枚举
 CONFIG.SMS_OP_SEND_SMS_PARAM_ENUM = {
-    DES_NUM = "dN",     -- 目标电话号码
-    CONTENT = "ct",     -- 短信内容
+    DES_NUM = "desNum",     -- 目标电话号码
+    CONTENT = "content",     -- 短信内容
 }
 
 -- 短信信令通用参数枚举
 CONFIG.SMS_OP_COMMON_PARAM_ENUM = {
-    TIMESTAMP = "t",
+    TIMESTAMP = "timestamp",
     OP = "op",
 }
 
@@ -104,6 +106,15 @@ CONFIG.EVENT_ENUM = {
         RELOAD = "CONFIG_RELOAD",   -- 配置重新加载
         CHANGED = "CONFIG_CHANGED", -- 配置已修改
     }
+}
+
+-- 压缩字典 用于信令压缩 起始值为1
+CONFIG.COMPRESS_DICT = {
+    [["fwdEnable":true]], [["fwdEnable":false]] , [["netEnable":true]], [["netEnable":false]], [["clearBlackList":true]], [["clearBlackList":false]], [["fwdChannel":"ws"]], [["fwdChannel":"sms"]], 
+    [["fwdEnable"]], [["netEnable"]], [["clearBlackList"]], [["fwdChannel"]],
+    [["addBlackList":]], [["rmBlackList":]], [["blacklist"]], [["phoneNum"]], [["smsFwdList"]], [["wsConfig"]], [["desNum":]], [["content":]], [["timestamp":]], [["configList":]],
+    [["op":"setConfig"]], [["op":"getConfig"]], [["op":"setChannel"]], [["op":"sendSms"]],
+    [[@ws:\/\/]], [[","]], [[.com]], [[.cn]], [[106]],
 }
 
 return CONFIG

@@ -39,5 +39,9 @@ sys.subscribe("NTP_UPDATE", function()
     require("init").init()
 end)
 
+for index, value in pairs(CONFIG.COMPRESS_DICT) do
+    log.debug(LOG_TAG, "压缩字典", index, value)
+end
+
 -- 启用调度器
 sys.run()

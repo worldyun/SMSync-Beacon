@@ -49,6 +49,11 @@ CONFIG.CRYPTO = {
     KEY = nil,                  -- 加密密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
 }
 
+CONFIG.WS = {
+    AUTO_RECONNECT_TIME = 3000,  -- 自动重连时间间隔 单位ms 默认3000ms
+    AUTO_RECONNECT_ENABLE = true,-- 自动重连使能
+}
+
 -- 短信信令操作码枚举
 CONFIG.SMS_OP_CODE_ENUM = {
     SET_CONFIG = "setConfig",      -- 设置配置

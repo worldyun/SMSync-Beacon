@@ -2,6 +2,7 @@ _G.CONFIG = require "config"
 _G.UTIL = require "util"
 _G.SMS_SERVICE = require "sms_service"
 _G.FWD_SERVICE = require "fwd_service"
+_G.WS_SERVICE = require "ws_service"
 _G.sys = require("sys")
 
 PROJECT = "SMSync-Beaco" -- 项目名称
@@ -42,6 +43,10 @@ end)
 
 for index, value in pairs(CONFIG.COMPRESS_DICT) do
     log.debug(LOG_TAG, "压缩字典", index, value)
+end
+
+if not websocket then
+    log.error(LOG_TAG, "WS服务依赖websocket模块, 但未能加载!")
 end
 
 -- 启用调度器

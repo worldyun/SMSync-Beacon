@@ -223,5 +223,14 @@ function util.table_is_empty(t)
     return util.table_length(t) == 0
 end
 
+-- 获取ws_config中的ws地址 返回格式ws://test.com/websocket
+function util.get_ws_url(ws_config)
+    return string.match(ws_config, "@(.+)$")
+end
+
+-- 获取ws_config中的accessKey
+function util.get_ws_access_key(ws_config)
+    return string.match(ws_config, "^(.+)@")
+end
 
 return util

@@ -58,6 +58,18 @@ function util.str_to_table(str)
     return func()
 end
 
+-- 校验时间戳
+function util.check_time_diff(timestamp, max_timestamp_diff)
+    if timestamp == nil then
+        return false
+    end
+    local current_time = os.time()
+    if math.abs(current_time - timestamp) > max_timestamp_diff then
+        return false
+    end
+    return true
+end
+
 -- 校验信令合法性
 -- sms_op_json: 信令
 function util.check_sms_op(sms_op_json)
@@ -66,13 +78,12 @@ function util.check_sms_op(sms_op_json)
         return false
     end
 
-    local current_time = os.time()
     if sms_op_json[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP] == nil then
         log.error(LOG_TAG, "短信信令缺少timestamp参数")
         return false
     end
-    if math.abs(current_time - sms_op_json[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP]) > CONFIG.OP.MAX_TIMESTAMP_DIFF then
-        log.error(LOG_TAG, "短信信令timestamp不合法", "当前时间: " .. tostring(current_time),
+    if not util.check_time_diff(sms_op_json[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP], CONFIG.OP.MAX_TIMESTAMP_DIFF) then
+        log.error(LOG_TAG, "短信信令timestamp不合法", "当前时间: " .. tostring(os.time()),
             "信令时间: " .. tostring(sms_op_json[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP]))
         return false
     end
@@ -140,11 +151,13 @@ function util.deduplicate_array(arr)
 end
 
 -- 加密函数
-function util.encrypt_and_base64(data)
-    local key = CONFIG.CRYPTO.KEY
+function util.encrypt_and_base64(data, key)
     if key == nil then
-        key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
-        CONFIG.CRYPTO.KEY = key
+        key = CONFIG.CRYPTO.KEY
+        if key == nil then
+            key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
+            CONFIG.CRYPTO.KEY = key
+        end
     end
     -- 生成随机初始向量(IV)
     -- IV长度必须等于密钥长度
@@ -154,11 +167,13 @@ function util.encrypt_and_base64(data)
 end
 
 -- 解密函数
-function util.decrypt_and_base64(data)
-    local key = CONFIG.CRYPTO.KEY
+function util.decrypt_and_base64(data, key)
     if key == nil then
-        key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
-        CONFIG.CRYPTO.KEY = key
+        key = CONFIG.CRYPTO.KEY
+        if key == nil then
+            key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
+            CONFIG.CRYPTO.KEY = key
+        end
     end
     local iv = data:sub(1, CONFIG.CRYPTO.KEY_LEN)
     local crypto_data = crypto.base64_decode(data:sub(CONFIG.CRYPTO.KEY_LEN + 1))
@@ -171,7 +186,7 @@ function util.compress(data)
     -- 根据压缩字典进行压缩 一次替换
     local compressed_data = data
     for index, value in pairs(CONFIG.COMPRESS_DICT) do
-        compressed_data = string.gsub(compressed_data,value,string.char(index))
+        compressed_data = string.gsub(compressed_data, value, string.char(index))
     end
     return compressed_data
 end
@@ -182,7 +197,7 @@ function util.decompress(data)
     -- 根据压缩字典进行解压 一次替换
     local decompressed_data = data
     for index, value in pairs(CONFIG.COMPRESS_DICT) do
-        decompressed_data = string.gsub(decompressed_data,string.char(index),value)
+        decompressed_data = string.gsub(decompressed_data, string.char(index), value)
     end
     return decompressed_data
 end

@@ -36,12 +36,13 @@ CONFIG.LOG = {
 
 -- 信令配置
 CONFIG.OP = {
-    MAX_TIMESTAMP_DIFF = 300,   -- 信令时间戳允许的最大时间差(秒)
+    MAX_TIMESTAMP_DIFF = 300, -- 信令时间戳允许的最大时间差(秒)
     OP_CODE_START = "#*",     -- 信令起始
     OP_CODE_END = "*#",       -- 信令结束
     COMPRESS = true,          -- 信令压缩使能
 }
 
+-- 加密配置
 CONFIG.CRYPTO = {
     ALGORITHM = "AES-128-CBC",  -- 加密算法
     KEY_LEN = 16,               -- 密钥长度
@@ -49,9 +50,39 @@ CONFIG.CRYPTO = {
     KEY = nil,                  -- 加密密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
 }
 
+-- WS服务配置
 CONFIG.WS = {
-    AUTO_RECONNECT_TIME = 3000,  -- 自动重连时间间隔 单位ms 默认3000ms
-    AUTO_RECONNECT_ENABLE = true,-- 自动重连使能
+    MAX_TIMESTAMP_DIFF = 300,       -- 时间戳允许的最大时间差(秒)
+    AUTO_RECONNECT_TIME = 3000,     -- 自动重连时间间隔 单位ms 默认3000ms
+    AUTO_RECONNECT_ENABLE = true,   -- 自动重连使能
+    HEADERS_KEY = {
+        AUTHORIZATION = "Authorization",        -- sha256(accessKey)
+        SMSYNC_BEACO_ID = "SMSYNC-Beaco-ID",    -- sha256(imei)
+    },
+    CRYPTO_KEY = nil,           -- 加密密钥
+}
+
+-- WS服务参数枚举
+CONFIG.WS_PARAM_ENUM = {
+    TIMESTAMP = "timestamp",    -- 时间戳
+    RES_ID = "res_id",          -- 来源ID
+    MSG = "msg",                -- 消息
+}
+
+-- 转发服务参数
+CONFIG.FWD = {
+    SMS_FWD_UP_TEMPLATE = "$content (SMSync:来自$res)",    -- 短信转发模板
+    SMS_FWD_UP_TEMPLATE_PLACEHOLDER = {                 -- 短信转发模板占位符
+        CONTENT = "$content",
+        RES = "$res",
+    },
+}
+
+-- 转发服务参数枚举
+CONFIG.FWD_PARAM_ENUM = {
+    TIMESTAMP = "timestamp",    -- 时间戳
+    RES_NUM = "resNum",         -- 来源号码
+    CONTENT = "content",        -- 内容
 }
 
 -- 短信信令操作码枚举

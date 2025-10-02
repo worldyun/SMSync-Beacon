@@ -55,7 +55,7 @@ local function fwd_service_impl(direction, content, des_num, res_num)
 
     if direction == CONFIG.FWD_DIRECTION_ENUM.UP then
         -- 上行转发 接收第三方短信转发至控制端
-        log.info(LOG_TAG, "转发服务事件", "转发方向：上行", "内容：" .. content, "源号码：" ..res_num)
+        log.info(LOG_TAG, "转发服务事件", "转发方向：上行", "内容：" .. content, "源号码：" .. res_num)
         -- 检查是否命中黑名单
         if is_in_blacklist(res_num, content) then
             return
@@ -63,18 +63,23 @@ local function fwd_service_impl(direction, content, des_num, res_num)
         if CONFIG.SMSYNC.FWD_CHANNEL == CONFIG.FWD_CHANNEL_ENUM.SMS then
             -- 通过短信转发
             for _, fwd_num in ipairs(CONFIG.SMSYNC.SMS_FWD_LIST) do
-                SMS_SERVICE.send_sms(fwd_num, content)
+                local msg = string.gsub(CONFIG.FWD.SMS_FWD_UP_TEMPLATE, CONFIG.FWD.SMS_FWD_UP_TEMPLATE_PLACEHOLDER.CONTENT, content)
+                msg = string.gsub(msg, CONFIG.FWD.SMS_FWD_UP_TEMPLATE_PLACEHOLDER.RES, res_num)
+                SMS_SERVICE.send_sms(fwd_num, msg)
             end
         elseif CONFIG.SMSYNC.FWD_CHANNEL == CONFIG.FWD_CHANNEL_ENUM.WS then
             -- 通过WebSocket转发
-            log.warn(LOG_TAG, "WebSocket转发功能未实现, 忽略转发")
+            local msg = {}
+            msg[CONFIG.FWD_PARAM_ENUM.TIMESTAMP] = os.time()
+            msg[CONFIG.FWD_PARAM_ENUM.RES_NUM] = res_num
+            msg[CONFIG.FWD_PARAM_ENUM.CONTENT] = content
+            WS_SERVICE.send_msg(res_num, json.encode(msg))
         else
             log.error(LOG_TAG, "未知的转发通道", tostring(CONFIG.SMSYNC.FWD_CHANNEL))
         end
-    end
-    if direction == CONFIG.FWD_DIRECTION_ENUM.DOWN then
+    elseif direction == CONFIG.FWD_DIRECTION_ENUM.DOWN then
         -- 下行转发 控制端转发至第三方短信
-        log.info(LOG_TAG, "转发服务事件", "转发方向：下行", "内容：" .. content, "目标号码：" ..des_num)
+        log.info(LOG_TAG, "转发服务事件", "转发方向：下行", "内容：" .. content, "目标号码：" .. des_num)
         SMS_SERVICE.send_sms(des_num, content)
     end
 end

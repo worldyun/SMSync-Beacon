@@ -38,16 +38,10 @@ end)
 
 sys.subscribe("NTP_UPDATE", function()
     log.info(LOG_TAG, "时间已同步", os.date())
-    require("init").init()
+    sys.taskInit(function()
+        require("init").init()
+    end)
 end)
-
-for index, value in pairs(CONFIG.COMPRESS_DICT) do
-    log.debug(LOG_TAG, "压缩字典", index, value)
-end
-
-if not websocket then
-    log.error(LOG_TAG, "WS服务依赖websocket模块, 但未能加载!")
-end
 
 -- 启用调度器
 sys.run()

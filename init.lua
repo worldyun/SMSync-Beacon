@@ -57,7 +57,8 @@ local function load_smsync_config(config_key, default_value)
         CONFIG.SMSYNC[config_key] = value
         -- table类型需要序列化
         if type(default_value) == "table" then
-            log.info(LOG_TAG, "加载KVFS中存储的配置", "CONFIG.SMSYNC." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
+            log.info(LOG_TAG, "加载KVFS中存储的配置", "CONFIG.SMSYNC." .. config_key,
+                UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
         else
             log.info(LOG_TAG, "加载KVFS中存储的配置", "CONFIG.SMSYNC." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
         end
@@ -65,12 +66,12 @@ local function load_smsync_config(config_key, default_value)
         CONFIG.SMSYNC[config_key] = default_value
         -- table类型需要序列化
         if type(default_value) == "table" then
-            log.info(LOG_TAG, "使用默认配置", "CONFIG.SMSYNC.DEFAULT." .. config_key, UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
+            log.info(LOG_TAG, "使用默认配置", "CONFIG.SMSYNC.DEFAULT." .. config_key,
+                UTIL.table_to_str(CONFIG.SMSYNC[config_key]))
         else
             log.info(LOG_TAG, "使用默认配置", "CONFIG.SMSYNC.DEFAULT." .. config_key, tostring(CONFIG.SMSYNC[config_key]))
         end
     end
-
 end
 
 local function update_smsync_config(config_changed_table)
@@ -122,6 +123,11 @@ function init.init()
     SMS_SERVICE.init()
     FWD_SERVICE.init()
     WS_SERVICE.init()
+    if CONFIG.LOG.LEVEL == "DEBUG" then
+        for index, value in pairs(CONFIG.COMPRESS_DICT) do
+            log.debug(LOG_TAG, "压缩字典", index, value)
+        end
+    end
 end
 
 return init

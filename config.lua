@@ -55,12 +55,15 @@ CONFIG.CRYPTO = {
 CONFIG.WS = {
     MAX_TIMESTAMP_DIFF = 300,       -- 时间戳允许的最大时间差(秒)
     AUTO_RECONNECT_TIME = 3000,     -- 自动重连时间间隔 单位ms 默认3000ms
-    AUTO_RECONNECT_ENABLE = true,   -- 自动重连使能
+    AUTO_RECONNECT_ENABLE = false,   -- 自动重连使能
+    HEARTBEAT_INTERVAL  = 30000,     -- 心跳间隔 单位ms 默认30000ms
     HEADERS_KEY = {
         AUTHORIZATION = "Authorization",        -- sha512(accessKey)
         SMSYNC_BEACO_ID = "SMSYNC-Beaco-ID",    -- sha512(imei)
         SALT = "Salt"                           -- 随机盐
     },
+    WS_SEND_COUNT = 0,              -- ws发送消息计数
+    WS_RECV_COUNT = 0,              -- ws接收消息计数
     CRYPTO_SALT_LEN = 16,           -- 加密随机盐长度
     CRYPTO_KEY = nil,               -- 加密密钥, 运行时由accessKey生成, 请勿修改
 }
@@ -70,6 +73,14 @@ CONFIG.WS_PARAM_ENUM = {
     TIMESTAMP = "timestamp",    -- 时间戳
     RES_ID = "res_id",          -- 来源ID
     MSG = "msg",                -- 消息
+    ACTION = "action",          -- 操作码
+    COUNT = "count",            -- mgs计数，防止重放攻击
+}
+
+-- WS服务操作码枚举
+CONFIG.WS_ACTION_CODE_ENUM = {
+    MSG = "msg",                 -- 消息
+    HEARTBEAT = "heartbeat",     -- 心跳
 }
 
 -- 转发服务参数

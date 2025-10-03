@@ -4,6 +4,10 @@ local LOG_TAG = "WS_SERVICE"
 
 local ws_client = nil
 local ws_salt = nil
+local ws_send_count = 0
+local ws_recv_count = 0
+local ws_service_init
+local heartbeat_timer = nil
 
 local function ws_send(data)
     if ws_client == nil or not ws_client:ready() then
@@ -16,6 +20,42 @@ local function ws_send(data)
     else
         ws_client:send(data)
     end
+end
+
+
+local function ws_action_server_msg_process(data)
+    log.debug(LOG_TAG, "收到WS MSG数据")
+    local msg_count = data[CONFIG.WS_PARAM_ENUM.COUNT]
+    if not msg_count then
+        log.error(LOG_TAG, "WS数据缺少count字段")
+        return
+    end
+    log.debug(LOG_TAG, "WS MSG count", msg_count)
+    -- 判断msg_count与ws_recv_count大小，只有msg_count大于ws_recv_count时才处理
+    if msg_count <= ws_recv_count then
+        log.debug(LOG_TAG, "WS MSG count小于等于ws_recv_count, 忽略", msg_count, ws_recv_count)
+        return
+    end
+    ws_recv_count = msg_count
+
+    local msg = data[CONFIG.WS_PARAM_ENUM.MSG]
+    if not msg then
+        log.error(LOG_TAG, "WS数据缺少msg字段")
+        return
+    end
+
+    msg = UTIL.decrypt_and_base64(msg, CONFIG.CRYPTO.KEY, true)
+    log.debug(LOG_TAG, "WS MSG 解密后", msg)
+    if not msg then
+        log.error(LOG_TAG, "WS MSG数据解密失败")
+        return
+    end
+
+    SMS_SERVICE.sms_op_impl(CONFIG.FWD_CHANNEL_ENUM.WS, msg)
+end
+
+local function ws_action_server_heartbeat_process(data)
+    log.debug(LOG_TAG, "收到WS HEARTBEAT数据")
 end
 
 
@@ -42,21 +82,37 @@ local function ws_recv_data_process(data)
         return
     end
 
-    local msg = data[CONFIG.WS_PARAM_ENUM.MSG]
-    if not msg then
-        log.error(LOG_TAG, "WS数据缺少msg字段")
+    -- 判断action类型
+    if not data[CONFIG.WS_PARAM_ENUM.ACTION] then
+        log.error(LOG_TAG, "WS数据缺少action字段")
         return
     end
 
-    msg = UTIL.decrypt_and_base64(msg, CONFIG.CRYPTO.KEY, true)
-    log.debug(LOG_TAG, "WS MSG 解密后", msg)
-    if not msg then
-        log.error(LOG_TAG, "WS MSG数据解密失败")
-        return
+    if data[CONFIG.WS_PARAM_ENUM.ACTION] == CONFIG.WS_ACTION_CODE_ENUM.MSG then
+        ws_action_server_msg_process(data)
+    elseif data[CONFIG.WS_PARAM_ENUM.ACTION] == CONFIG.WS_ACTION_CODE_ENUM.HEARTBEAT then
+        ws_action_server_heartbeat_process(data)
+    else
+        log.error(LOG_TAG, "WS数据action错误")
     end
-
-    SMS_SERVICE.sms_op_impl(CONFIG.FWD_CHANNEL_ENUM.WS, msg)
 end
+
+-- 心跳实现函数
+local function ws_heartbeat()
+    if not ws_client or not ws_client:ready() then
+        log.error(LOG_TAG, "WS服务未初始化或未就绪!")
+        return
+    end
+    log.debug(LOG_TAG, "WS服务发送心跳")
+    local heartbeat_msg = {}
+    heartbeat_msg[CONFIG.WS_PARAM_ENUM.TIMESTAMP] = os.time()
+    heartbeat_msg[CONFIG.WS_PARAM_ENUM.ACTION] = CONFIG.WS_ACTION_CODE_ENUM.HEARTBEAT
+    local send_msg_str = json.encode(heartbeat_msg)
+    log.info(LOG_TAG, "WS心跳(加密前)" .. send_msg_str)
+    send_msg_str = UTIL.encrypt_and_base64(send_msg_str, CONFIG.WS.CRYPTO_KEY, true)
+    ws_send(send_msg_str)
+end
+
 
 
 -- ws事件回调函数
@@ -65,6 +121,13 @@ local function ws_event_cb(wsc, event, data)
     if event == "recv" then
         log.debug(LOG_TAG, "WS收到数据", data)
         ws_recv_data_process(data)
+    elseif event == "disconnect" then
+        sys.timerStop(heartbeat_timer)
+        log.error(LOG_TAG, "WS服务断开连接, 重新初始化 WS服务...")
+        ws_service_init()
+    elseif event == "conack" then
+        log.info(LOG_TAG, "WS服务连接成功，启动心跳定时器")
+        heartbeat_timer = sys.timerLoopStart(ws_heartbeat, CONFIG.WS.HEARTBEAT_INTERVAL)
     end
 end
 
@@ -75,15 +138,18 @@ function ws_service.send_msg(res, msg)
     end
     local send_msg = {}
     send_msg[CONFIG.WS_PARAM_ENUM.TIMESTAMP] = os.time()
+    send_msg[CONFIG.WS_PARAM_ENUM.ACTION] = CONFIG.WS_ACTION_CODE_ENUM.MSG
     send_msg[CONFIG.WS_PARAM_ENUM.RES_ID] = crypto.sha256(res)
     send_msg[CONFIG.WS_PARAM_ENUM.MSG] = UTIL.encrypt_and_base64(msg, CONFIG.CRYPTO.KEY, true)
+    ws_send_count = ws_send_count + 1
+    send_msg[CONFIG.WS_PARAM_ENUM.COUNT] = ws_send_count
     local send_msg_str = json.encode(send_msg)
     log.info(LOG_TAG, "WS发送消息(加密前)" .. send_msg_str)
     send_msg_str = UTIL.encrypt_and_base64(send_msg_str, CONFIG.WS.CRYPTO_KEY, true)
     ws_send(send_msg_str)
 end
 
-local function ws_service_init()
+ws_service_init = function()
     if not websocket then
         log.error(LOG_TAG, "WS服务依赖websocket模块, 但未能加载!")
         return
@@ -92,6 +158,8 @@ local function ws_service_init()
         ws_client:close()
         ws_client = nil
         ws_salt = nil
+        ws_send_count = 0
+        ws_recv_count = 0
     end
 
     -- 判断是否需要初始化
@@ -135,6 +203,8 @@ function ws_service.init()
             ws_client:close()
             ws_client = nil
             ws_salt = nil
+            ws_send_count = 0
+            ws_recv_count = 0
         end
     end)
     ws_service_init()

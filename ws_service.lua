@@ -139,7 +139,7 @@ function ws_service.send_msg(res, msg)
     local send_msg = {}
     send_msg[CONFIG.WS_PARAM_ENUM.TIMESTAMP] = os.time()
     send_msg[CONFIG.WS_PARAM_ENUM.ACTION] = CONFIG.WS_ACTION_CODE_ENUM.MSG
-    send_msg[CONFIG.WS_PARAM_ENUM.RES_ID] = crypto.sha256(res)
+    send_msg[CONFIG.WS_PARAM_ENUM.RES_ID] = crypto.hmac_sha256(res, mobile.imei() .. mobile.imsi())
     send_msg[CONFIG.WS_PARAM_ENUM.MSG] = UTIL.encrypt_and_base64(msg, CONFIG.CRYPTO.KEY, true)
     ws_send_count = ws_send_count + 1
     send_msg[CONFIG.WS_PARAM_ENUM.COUNT] = ws_send_count
@@ -149,6 +149,13 @@ function ws_service.send_msg(res, msg)
     ws_send(send_msg_str)
 end
 
+-- 获取ws authorization
+local function get_ws_authorization(accessKey)
+    local current_time = os.time()
+    return current_time .."@".. crypto.hmac_sha256(current_time, accessKey)
+end
+
+-- ws服务初始化函数
 ws_service_init = function()
     if not websocket then
         log.error(LOG_TAG, "WS服务依赖websocket模块, 但未能加载!")
@@ -185,8 +192,8 @@ ws_service_init = function()
     ws_salt = crypto.trng(CONFIG.WS.CRYPTO_SALT_LEN)
     UTIL.get_ws_encrypt_key(ws_salt, accessKey)
     local ws_headers = {}
-    ws_headers[CONFIG.WS.HEADERS_KEY.AUTHORIZATION] = crypto.sha512(accessKey)
-    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACO_ID] = crypto.sha512(mobile.imei())
+    ws_headers[CONFIG.WS.HEADERS_KEY.AUTHORIZATION] = get_ws_authorization(accessKey)
+    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACO_ID] = crypto.hmac_sha256(mobile.imei(), CONFIG.CRYPTO.KEY)
     ws_headers[CONFIG.WS.HEADERS_KEY.SALT] = crypto.base64_encode(ws_salt)
     ws_client:headers(ws_headers)
     ws_client:connect()

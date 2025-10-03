@@ -71,7 +71,7 @@ CONFIG.WS = {
 -- WS服务参数枚举
 CONFIG.WS_PARAM_ENUM = {
     TIMESTAMP = "timestamp",    -- 时间戳
-    RES_ID = "res_id",          -- 来源ID
+    RES_ID = "res_id",          -- 来源ID   hmac_sha256(res, mobile.imei() .. mobile.imsi())
     MSG = "msg",                -- 消息
     ACTION = "action",          -- 操作码
     COUNT = "count",            -- mgs计数，防止重放攻击

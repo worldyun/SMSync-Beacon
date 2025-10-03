@@ -4,7 +4,7 @@ local CONFIG = {}
 CONFIG.SMSYNC = {
     -- 默认配置, 可不设置, 由短信信令修改。信令配置优先级高于默认配置
     DEFAULT = {
-        SMSYNC_BEACO_KEY = nil,              -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位, 只能包含大小写字母和数字, 使用半角双引号包裹, 例如"FBA57224295A"
+        SMSYNC_BEACO_KEY = nil,              -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位, 使用半角双引号包裹, 例如"Fba5/22=295A"
         PHONE_NUM = "13333333333",           -- 自身电话号码
         FWD_CHANNEL = "ws",                  -- 同步类型 ws-通过WebSocket同步, sms-通过短信同步
         WS_CONFIG = "accessKey@url",         -- WebSocket配置, FWD_CHANNEL为ws时生效 格式: 访问密钥@链接地址 例如"my_access_key@ws://example.com/websocket"

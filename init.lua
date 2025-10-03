@@ -31,7 +31,7 @@ local function load_smsync_beaco_key()
             log.info(LOG_TAG, "KVFS中未存储设备密钥, 正在生成新的设备密钥")
             local random_string = crypto.trng(16);
             log.debug(LOG_TAG, "随机字符串", random_string)
-            beaco_key = crypto.md5(random_string):sub(1, 12)
+            beaco_key = crypto.base64_encode(random_string):sub(1, 12)
             fskv.set("CONFIG.SMSYNC.SMSYNC_BEACO_KEY", beaco_key)
             CONFIG.SMSYNC.SMSYNC_BEACO_KEY = beaco_key
             log.info(LOG_TAG, "生成新的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
@@ -40,10 +40,6 @@ local function load_smsync_beaco_key()
         -- 校验设备密钥长度与合法性
         if string.len(CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY) ~= 12 then
             log.error(LOG_TAG, "设备密钥长度错误, 请检查配置文件")
-            sys.restart()
-        end
-        if not string.match(CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY, "^[a-zA-Z0-9]+$") then
-            log.error(LOG_TAG, "设备密钥格式错误, 请检查配置文件")
             sys.restart()
         end
         CONFIG.SMSYNC.SMSYNC_BEACO_KEY = CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY

@@ -3,6 +3,7 @@ local ws_service = {}
 local LOG_TAG = "WS_SERVICE"
 
 local ws_client = nil
+local ws_salt = nil
 
 local function ws_send(data)
     if ws_client == nil or not ws_client:ready() then
@@ -24,8 +25,8 @@ local function ws_recv_data_process(data)
     if CONFIG.LOG.LEVEL == "DEBUG" then
         data = json.decode(data)["msg"]
     end
-    data = UTIL.decrypt_and_base64(data, CONFIG.WS.CRYPTO_KEY)
-    log.debug(LOG_TAG, "WS收到数据(解密后)", data)
+    data = UTIL.decrypt_and_base64(data, CONFIG.WS.CRYPTO_KEY, true)
+    log.info(LOG_TAG, "WS收到数据(解密后)", data)
     if data == nil then
         log.error(LOG_TAG, "WS数据解密失败")
         return
@@ -47,7 +48,7 @@ local function ws_recv_data_process(data)
         return
     end
 
-    msg = UTIL.decrypt_and_base64(msg, CONFIG.CRYPTO.KEY)
+    msg = UTIL.decrypt_and_base64(msg, CONFIG.CRYPTO.KEY, true)
     log.debug(LOG_TAG, "WS MSG 解密后", msg)
     if not msg then
         log.error(LOG_TAG, "WS MSG数据解密失败")
@@ -67,26 +68,18 @@ local function ws_event_cb(wsc, event, data)
     end
 end
 
-local function get_ws_crypto_key()
-    if CONFIG.WS.CRYPTO_KEY == nil then
-        CONFIG.WS.CRYPTO_KEY = crypto.sha256(UTIL.get_ws_access_key(CONFIG.SMSYNC.WS_CONFIG)):sub(1,
-            CONFIG.CRYPTO.KEY_LEN)
-    end
-    return CONFIG.WS.CRYPTO_KEY
-end
-
 function ws_service.send_msg(res, msg)
-    if ws_client == nil or not ws_client:ready() then
+    if not ws_client or not ws_client:ready() then
         log.error(LOG_TAG, "WS服务未初始化或未就绪!")
         return
     end
     local send_msg = {}
     send_msg[CONFIG.WS_PARAM_ENUM.TIMESTAMP] = os.time()
     send_msg[CONFIG.WS_PARAM_ENUM.RES_ID] = crypto.sha256(res)
-    send_msg[CONFIG.WS_PARAM_ENUM.MSG] = UTIL.encrypt_and_base64(msg, CONFIG.CRYPTO.KEY)
+    send_msg[CONFIG.WS_PARAM_ENUM.MSG] = UTIL.encrypt_and_base64(msg, CONFIG.CRYPTO.KEY, true)
     local send_msg_str = json.encode(send_msg)
-    log.debug(LOG_TAG, "WS发送消息: " .. send_msg_str)
-    send_msg_str = UTIL.encrypt_and_base64(send_msg_str, CONFIG.WS.CRYPTO_KEY)
+    log.info(LOG_TAG, "WS发送消息(加密前)" .. send_msg_str)
+    send_msg_str = UTIL.encrypt_and_base64(send_msg_str, CONFIG.WS.CRYPTO_KEY, true)
     ws_send(send_msg_str)
 end
 
@@ -98,6 +91,7 @@ local function ws_service_init()
     if ws_client ~= nil then
         ws_client:close()
         ws_client = nil
+        ws_salt = nil
     end
 
     -- 判断是否需要初始化
@@ -116,16 +110,16 @@ local function ws_service_init()
         return
     end
 
-    -- 获取ws服务加密密钥
-    get_ws_crypto_key()
-
     log.info(LOG_TAG, "WS服务初始化")
     ws_client = websocket.create(nil, ws_url)
     ws_client:autoreconn(CONFIG.WS.AUTO_RECONNECT_ENABLE, CONFIG.WS.AUTO_RECONNECT_TIME)
     ws_client:on(ws_event_cb)
+    ws_salt = crypto.trng(CONFIG.WS.CRYPTO_SALT_LEN)
+    UTIL.get_ws_encrypt_key(ws_salt, accessKey)
     local ws_headers = {}
-    ws_headers[CONFIG.WS.HEADERS_KEY.AUTHORIZATION] = crypto.sha256(accessKey)
-    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACO_ID] = crypto.sha256(mobile.imei())
+    ws_headers[CONFIG.WS.HEADERS_KEY.AUTHORIZATION] = crypto.sha512(accessKey)
+    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACO_ID] = crypto.sha512(mobile.imei())
+    ws_headers[CONFIG.WS.HEADERS_KEY.SALT] = crypto.base64_encode(ws_salt)
     ws_client:headers(ws_headers)
     ws_client:connect()
 end
@@ -140,6 +134,7 @@ function ws_service.init()
         if ws_client ~= nil then
             ws_client:close()
             ws_client = nil
+            ws_salt = nil
         end
     end)
     ws_service_init()

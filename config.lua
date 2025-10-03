@@ -47,7 +47,8 @@ CONFIG.CRYPTO = {
     ALGORITHM = "AES-128-CBC",  -- 加密算法
     KEY_LEN = 16,               -- 密钥长度
     PADDING = "PKCS7",          -- 填充方式
-    KEY = nil,                  -- 加密密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
+    PBKDF2_ITER = 1000,         -- PBKDF2迭代次数
+    KEY = nil,                  -- 设备密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
 }
 
 -- WS服务配置
@@ -56,10 +57,12 @@ CONFIG.WS = {
     AUTO_RECONNECT_TIME = 3000,     -- 自动重连时间间隔 单位ms 默认3000ms
     AUTO_RECONNECT_ENABLE = true,   -- 自动重连使能
     HEADERS_KEY = {
-        AUTHORIZATION = "Authorization",        -- sha256(accessKey)
-        SMSYNC_BEACO_ID = "SMSYNC-Beaco-ID",    -- sha256(imei)
+        AUTHORIZATION = "Authorization",        -- sha512(accessKey)
+        SMSYNC_BEACO_ID = "SMSYNC-Beaco-ID",    -- sha512(imei)
+        SALT = "Salt"                           -- 随机盐
     },
-    CRYPTO_KEY = nil,           -- 加密密钥
+    CRYPTO_SALT_LEN = 16,           -- 加密随机盐长度
+    CRYPTO_KEY = nil,               -- 加密密钥, 运行时由accessKey生成, 请勿修改
 }
 
 -- WS服务参数枚举

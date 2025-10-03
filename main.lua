@@ -43,5 +43,9 @@ sys.subscribe("NTP_UPDATE", function()
     end)
 end)
 
+local test = UTIL.pbkdf2("123456", "7890", CONFIG.CRYPTO.PBKDF2_ITER, CONFIG.CRYPTO.KEY_LEN)
+-- 16进制打印
+log.info(LOG_TAG, "test: " .. UTIL.str_to_hex(test))
+
 -- 启用调度器
 sys.run()

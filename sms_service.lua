@@ -126,11 +126,11 @@ local function op_get_config_impl(phone, sms_op_json)
         return
     end
     log.debug(LOG_TAG, "信令getConfig响应", response_json_string)
-    local encrypt_response_json_string = UTIL.encrypt_and_base64(response_json_string, CONFIG.CRYPTO.KEY)
+    local encrypt_response_json_string = UTIL.encrypt_and_base64(response_json_string, CONFIG.CRYPTO.KEY, true)
     local sms_response = "#*#*" .. encrypt_response_json_string .. "*#*#"
     -- 发送响应
     if phone == CONFIG.FWD_CHANNEL_ENUM.WS then
-        
+
     else
         sys.publish(CONFIG.EVENT_ENUM.FWD_SERVICE.FWD, CONFIG.FWD_DIRECTION_ENUM.DOWN, sms_response, phone, nil)
     end
@@ -280,7 +280,7 @@ local function sms_service_impl(phone, sms)
         log.info(LOG_TAG, "收到信令", phone, "长度: " .. string.len(sms), sms)
         local crypto_sms_op_json_string = string.sub(sms, string.len(CONFIG.OP.OP_CODE_START) + 1,
             -1 - string.len(CONFIG.OP.OP_CODE_END))
-        local sms_op_json_string = UTIL.decrypt_and_base64(crypto_sms_op_json_string, CONFIG.CRYPTO.KEY)
+        local sms_op_json_string = UTIL.decrypt_and_base64(crypto_sms_op_json_string, CONFIG.CRYPTO.KEY, true)
         if sms_op_json_string == nil then
             log.error(LOG_TAG, "解密信令失败")
             return
@@ -381,6 +381,7 @@ local function test()
 end
 
 function sms_service.init()
+    UTIL.get_op_encrypt_key()
     -- 监听短信接收事件
     sys.subscribe("SMS_INC", function(phone, sms)
         log.info("LOG_TAG", "收到短信", phone, sms)

@@ -4,21 +4,21 @@ local CONFIG = {}
 CONFIG.SMSYNC = {
     -- 默认配置, 可不设置, 由短信信令修改。信令配置优先级高于默认配置
     DEFAULT = {
-        SMSYNC_BEACO_KEY = nil,              -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位, 使用半角双引号包裹, 例如"Fba5/22=295A"
+        SMSYNC_BEACON_KEY = nil,              -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位, 使用半角双引号包裹, 例如"Fba5/22=295A"
         PHONE_NUM = "13333333333",           -- 自身电话号码
         FWD_CHANNEL = "ws",                  -- 同步类型 ws-通过WebSocket同步, sms-通过短信同步
-        WS_CONFIG = "accessKey@url",         -- WebSocket配置, FWD_CHANNEL为ws时生效 格式: 访问密钥@链接地址 例如"my_access_key@ws://example.com/websocket"
+        WS_CONFIG = "accessKey@ws://ip:port/ws",         -- WebSocket配置, FWD_CHANNEL为ws时生效 格式: 访问密钥@链接地址 例如"my_access_key@ws://example.com/websocket"
         SMS_FWD_LIST = {"1890000000"},       -- 短信转发目标列表, FWD_CHANNEL为sms时生效
-        FWD_ENABLE = false,                  -- 是否启用转发功能
-        NET_ENABLE = false,                  -- 是否启用网络功能
-        BLACKLIST = {"132*"},                -- 黑名单列表, 可以为手机号码, 也可以为号码段, 号码段以*结尾, 例如138*, 或者关键字, 以*开头结尾, 例如*测试*
+        FWD_ENABLE = true,                  -- 是否启用转发功能
+        NET_ENABLE = true,                  -- 是否启用网络功能
+        BLACKLIST = {"138*"},                -- 黑名单列表, 可以为手机号码, 也可以为号码段, 号码段以*结尾, 例如138*, 或者关键字, 以*开头结尾, 例如*测试*
         -- 添加黑名单后, 收到短信时会先判断是否在黑名单中, 如果在黑名单中则不转发
         -- 注意: 黑名单只针对转发功能, 不影响正常发送短信
         -- 示例: {"13800000000", "13900000000", "137*", "*测试*"}
     },
 
     -- 以下内容为运行时配置, 请勿修改
-    SMSYNC_BEACO_KEY = nil, -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位
+    SMSYNC_BEACON_KEY = nil, -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位
     PHONE_NUM = nil,        -- 自身电话号码
     FWD_CHANNEL = nil,      -- 同步类型 ws-通过WebSocket同步, sms-通过短信同步
     WS_CONFIG = nil,        -- WebSocket配置, FWD_CHANNEL为ws时生效,
@@ -59,7 +59,7 @@ CONFIG.WS = {
     HEARTBEAT_INTERVAL  = 30000,     -- 心跳间隔 单位ms 默认30000ms
     HEADERS_KEY = {
         AUTHORIZATION = "Authorization",        -- sha512(accessKey)
-        SMSYNC_BEACO_ID = "SMSYNC-Beaco-ID",    -- sha512(imei)
+        SMSYNC_BEACON_ID = "SMSYNC-Beacon-ID",    -- sha512(imei)
         SALT = "Salt"                           -- 随机盐
     },
     WS_SEND_COUNT = 0,              -- ws发送消息计数

@@ -1,4 +1,4 @@
-# SMSync-Beaco
+# SMSync-Beacon
 一个双向短信转发器
 
 # 短信信令格式

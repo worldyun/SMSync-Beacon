@@ -126,12 +126,15 @@ local function op_get_config_impl(phone, sms_op_json)
         return
     end
     log.debug(LOG_TAG, "信令getConfig响应", response_json_string)
-    local encrypt_response_json_string = UTIL.encrypt_and_base64(response_json_string, CONFIG.CRYPTO.KEY, true)
-    local sms_response = "#*#*" .. encrypt_response_json_string .. "*#*#"
     -- 发送响应
     if phone == CONFIG.FWD_CHANNEL_ENUM.WS then
-
+        -- 走上行转发, 将配置发送至ws
+        sys.publish(CONFIG.EVENT_ENUM.FWD_SERVICE.FWD, CONFIG.FWD_DIRECTION_ENUM.UP, response_json_string, nil,
+            CONFIG.SMS_OP_CODE_ENUM.GET_CONFIG)
     else
+        -- 走下行转发, 将配置发送至控制端而非转发列表中
+        local encrypt_response_json_string = UTIL.encrypt_and_base64(response_json_string, CONFIG.CRYPTO.KEY, true)
+        local sms_response = "#*#*" .. encrypt_response_json_string .. "*#*#"
         sys.publish(CONFIG.EVENT_ENUM.FWD_SERVICE.FWD, CONFIG.FWD_DIRECTION_ENUM.DOWN, sms_response, phone, nil)
     end
 end
@@ -361,7 +364,7 @@ local function test()
     -- test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.OP] = CONFIG.SMS_OP_CODE_ENUM.SET_CHANNEL
     -- test_data[CONFIG.SMS_OP_COMMON_PARAM_ENUM.TIMESTAMP] = os.time()
     -- test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.FWD_CHANNEL] = CONFIG.FWD_CHANNEL_ENUM.WS
-    -- test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.WS_CONFIG] = "testAccessKey@ws://echo.airtun.air32.cn/ws/echo"
+    -- test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.WS_CONFIG] = "SaiyCApByGJQhkye@ws://10.172.15.186:8080/ws/"
     -- test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.PHONE_NUM] = "13800000000"
     -- -- test_data[CONFIG.SMS_OP_SET_CHANNEL_PARAM_ENUM.SMS_FWD_LIST] = { "13800000000" }
     -- test_data_json_string = json.encode(test_data)

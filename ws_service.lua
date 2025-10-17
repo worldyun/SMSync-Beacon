@@ -14,12 +14,7 @@ local function ws_send(data)
         log.error(LOG_TAG, "WS服务未初始化或未就绪!")
         return
     end
-    if CONFIG.LOG.LEVEL == "DEBUG" then
-        log.info(LOG_TAG, "测试模式ws发送数据", (json.encode({ action = "echo", msg = data })))
-        ws_client:send((json.encode({ action = "echo", msg = data })))
-    else
-        ws_client:send(data)
-    end
+    ws_client:send(data)
 end
 
 
@@ -62,9 +57,6 @@ end
 -- ws recv data处理函数
 local function ws_recv_data_process(data)
     -- 解密
-    if CONFIG.LOG.LEVEL == "DEBUG" then
-        data = json.decode(data)["msg"]
-    end
     data = UTIL.decrypt_and_base64(data, CONFIG.WS.CRYPTO_KEY, true)
     log.info(LOG_TAG, "WS收到数据(解密后)", data)
     if data == nil then
@@ -193,7 +185,7 @@ ws_service_init = function()
     UTIL.get_ws_encrypt_key(ws_salt, accessKey)
     local ws_headers = {}
     ws_headers[CONFIG.WS.HEADERS_KEY.AUTHORIZATION] = get_ws_authorization(accessKey)
-    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACO_ID] = crypto.hmac_sha256(mobile.imei(), CONFIG.CRYPTO.KEY)
+    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACON_ID] = crypto.hmac_sha256(mobile.imei(), CONFIG.CRYPTO.KEY)
     ws_headers[CONFIG.WS.HEADERS_KEY.SALT] = crypto.base64_encode(ws_salt)
     ws_client:headers(ws_headers)
     ws_client:connect()

@@ -269,8 +269,8 @@ end
 -- 获取操作密钥
 function util.get_op_encrypt_key()
     if CONFIG.CRYPTO.KEY == nil then
-        log.debug(LOG_TAG, "生成op加密密钥，参数", mobile.imei(), CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
-        CONFIG.CRYPTO.KEY = util.pbkdf2(mobile.imei(), CONFIG.SMSYNC.SMSYNC_BEACO_KEY, CONFIG.CRYPTO.PBKDF2_ITER,
+        log.debug(LOG_TAG, "生成op加密密钥，参数", mobile.imei(), CONFIG.SMSYNC.SMSYNC_BEACON_KEY)
+        CONFIG.CRYPTO.KEY = util.pbkdf2(mobile.imei(), CONFIG.SMSYNC.SMSYNC_BEACON_KEY, CONFIG.CRYPTO.PBKDF2_ITER,
             CONFIG.CRYPTO.KEY_LEN)
     end
     return CONFIG.CRYPTO.KEY
@@ -278,10 +278,7 @@ end
 
 -- 获取ws密钥
 function util.get_ws_encrypt_key(salt, access_key)
-    if CONFIG.WS.CRYPTO_KEY == nil then
-        log.debug(LOG_TAG, "生成ws加密密钥，参数", util.str_to_hex(salt), access_key)
-        CONFIG.WS.CRYPTO_KEY = util.pbkdf2(salt, access_key, CONFIG.CRYPTO.PBKDF2_ITER, CONFIG.CRYPTO.KEY_LEN)
-    end
+    CONFIG.WS.CRYPTO_KEY = util.pbkdf2(salt, access_key, CONFIG.CRYPTO.PBKDF2_ITER, CONFIG.CRYPTO.KEY_LEN)
     return CONFIG.WS.CRYPTO_KEY
 end
 

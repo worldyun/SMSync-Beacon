@@ -19,31 +19,31 @@ local function init_fskv()
     end
 end
 
-local function load_smsync_beaco_key()
-    -- 判断SMSYNC_BEACO_KEY是否存在或CONFIG中默认值是否为nil, 不存在则生成一个新的
-    if CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY == nil then
+local function load_smsync_beacon_key()
+    -- 判断SMSYNC_BEACON_KEY是否存在或CONFIG中默认值是否为nil, 不存在则生成一个新的
+    if CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACON_KEY == nil then
         log.info(LOG_TAG, "配置文件中未设置设备密钥, 尝试加载KVFS中存储的设备密钥")
-        local beaco_key = fskv.get("CONFIG.SMSYNC.SMSYNC_BEACO_KEY")
-        if beaco_key then
-            CONFIG.SMSYNC.SMSYNC_BEACO_KEY = beaco_key
-            log.info(LOG_TAG, "加载KVFS中存储的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
+        local beacon_key = fskv.get("CONFIG.SMSYNC.SMSYNC_BEACON_KEY")
+        if beacon_key then
+            CONFIG.SMSYNC.SMSYNC_BEACON_KEY = beacon_key
+            log.info(LOG_TAG, "加载KVFS中存储的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACON_KEY)
         else
             log.info(LOG_TAG, "KVFS中未存储设备密钥, 正在生成新的设备密钥")
             local random_string = crypto.trng(16);
             log.debug(LOG_TAG, "随机字符串", random_string)
-            beaco_key = crypto.base64_encode(random_string):sub(1, 12)
-            fskv.set("CONFIG.SMSYNC.SMSYNC_BEACO_KEY", beaco_key)
-            CONFIG.SMSYNC.SMSYNC_BEACO_KEY = beaco_key
-            log.info(LOG_TAG, "生成新的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
+            beacon_key = crypto.base64_encode(random_string):sub(1, 12)
+            fskv.set("CONFIG.SMSYNC.SMSYNC_BEACON_KEY", beacon_key)
+            CONFIG.SMSYNC.SMSYNC_BEACON_KEY = beacon_key
+            log.info(LOG_TAG, "生成新的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACON_KEY)
         end
     else
         -- 校验设备密钥长度与合法性
-        if string.len(CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY) ~= 12 then
+        if string.len(CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACON_KEY) ~= 12 then
             log.error(LOG_TAG, "设备密钥长度错误, 请检查配置文件")
             sys.restart()
         end
-        CONFIG.SMSYNC.SMSYNC_BEACO_KEY = CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACO_KEY
-        log.info(LOG_TAG, "使用配置文件中已设置的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACO_KEY)
+        CONFIG.SMSYNC.SMSYNC_BEACON_KEY = CONFIG.SMSYNC.DEFAULT.SMSYNC_BEACON_KEY
+        log.info(LOG_TAG, "使用配置文件中已设置的设备密钥", CONFIG.SMSYNC.SMSYNC_BEACON_KEY)
     end
 end
 
@@ -95,7 +95,7 @@ local function load_config()
     log.info(LOG_TAG, "load config 加载配置")
     -- 发布配置加载事件
     sys.publish(CONFIG.EVENT_ENUM.CONFIG.LOADING)
-    load_smsync_beaco_key()
+    load_smsync_beacon_key()
     load_smsync_config("PHONE_NUM", CONFIG.SMSYNC.DEFAULT.PHONE_NUM)
     load_smsync_config("FWD_CHANNEL", CONFIG.SMSYNC.DEFAULT.FWD_CHANNEL)
     load_smsync_config("WS_CONFIG", CONFIG.SMSYNC.DEFAULT.WS_CONFIG)

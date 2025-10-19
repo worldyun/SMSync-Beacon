@@ -150,34 +150,136 @@ function util.deduplicate_array(arr)
     return result
 end
 
--- 加密函数
-function util.encrypt_and_base64(data, key)
-    if key == nil then
-        key = CONFIG.CRYPTO.KEY
-        if key == nil then
-            key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
-            CONFIG.CRYPTO.KEY = key
-        end
+function util.str_to_hex(s)
+    local bytes = {}
+    for i = 1, s:len() do
+        bytes[#bytes + 1] = ('%2x'):format(s:byte(i, i))
     end
+    return table.concat(bytes, '')
+end
+
+-- 16进制字符串转为字bytes字符串
+function util.hex_to_bytes(hex_string)
+    -- 使用table.insert比直接索引赋值稍快
+    local bytes = {}
+
+    -- 使用局部变量缓存全局函数以提高性能
+    local char = string.char
+    local sub = string.sub
+    local tonumber = tonumber
+
+    for i = 1, #hex_string, 2 do
+        bytes[#bytes + 1] = char(tonumber(sub(hex_string, i, i + 1), 16))
+    end
+    return table.concat(bytes)
+end
+
+function util.sha256(data)
+    return util.hex_to_bytes(crypto.sha256(data))
+end
+
+function util.hmac_sha256(data, key)
+    return util.hex_to_bytes(crypto.hmac_sha256(data, key))
+end
+
+-- PBKDF2实现函数
+-- password: 原始密码
+-- salt: 盐值
+-- iterations: 迭代次数
+-- key_length: 期望的密钥长度
+function util.pbkdf2(salt, password, iterations, key_length)
+
+    local string_pack = string.pack
+    local string_char = string.char
+    local string_byte = string.byte
+
+    local function F(password, salt, iterations, block_index)
+        local U = util.hmac_sha256(salt .. string_pack(">I4", block_index), password)
+        local result = {}
+
+        -- 将初始U转换为字节表以避免重复的string.byte操作
+        local u_bytes = {}
+        for j = 1, #U do
+            u_bytes[j] = string_byte(U, j)
+        end
+
+        -- 初始化结果表
+        for j = 1, #U do
+            result[j] = u_bytes[j]
+        end
+
+        for i = 2, iterations do
+            U = util.hmac_sha256(U, password)
+
+            -- 直接在字节表上进行XOR操作，避免重复的string.byte和string.char调用
+            for j = 1, #U do
+                result[j] = result[j] ~ string_byte(U, j)
+            end
+        end
+
+        -- 一次性构建结果字符串
+        local result_chars = {}
+        for j = 1, #result do
+            result_chars[j] = string_char(result[j])
+        end
+
+        return table.concat(result_chars)
+    end
+
+    -- 计算需要的块数
+    local hash_length = #util.sha256("")
+    local blocks_needed = math.ceil(key_length / hash_length)
+
+    -- 使用table来存储各块的结果，避免字符串拼接开销
+    local derived_key_parts = {}
+    for i = 1, blocks_needed do
+        derived_key_parts[#derived_key_parts + 1] = F(password, salt, iterations, i)
+    end
+
+    -- 一次性连接所有块
+    local derived_key = table.concat(derived_key_parts)
+
+    -- 截取所需长度
+    return derived_key:sub(1, key_length)
+end
+
+-- 加密函数
+function util.encrypt_and_base64(data, key, is_base64)
     -- 生成随机初始向量(IV)
     -- IV长度必须等于密钥长度
-    local iv = crypto.base64_encode(crypto.trng(CONFIG.CRYPTO.KEY_LEN)):sub(1, CONFIG.CRYPTO.KEY_LEN)
+    local iv = crypto.trng(CONFIG.CRYPTO.KEY_LEN)
     local crypto_data = crypto.cipher_encrypt(CONFIG.CRYPTO.ALGORITHM, CONFIG.CRYPTO.PADDING, data, key, iv)
-    return iv .. crypto.base64_encode(crypto_data)
+    if is_base64 then
+        return crypto.base64_encode(iv .. crypto_data)
+    else
+        return iv .. crypto_data
+    end
 end
 
 -- 解密函数
-function util.decrypt_and_base64(data, key)
-    if key == nil then
-        key = CONFIG.CRYPTO.KEY
-        if key == nil then
-            key = crypto.sha256(mobile.imei() .. CONFIG.SMSYNC.SMSYNC_BEACO_KEY):sub(1, CONFIG.CRYPTO.KEY_LEN)
-            CONFIG.CRYPTO.KEY = key
-        end
+function util.decrypt_and_base64(data, key, is_base64)
+    if is_base64 then
+        data = crypto.base64_decode(data)
     end
     local iv = data:sub(1, CONFIG.CRYPTO.KEY_LEN)
-    local crypto_data = crypto.base64_decode(data:sub(CONFIG.CRYPTO.KEY_LEN + 1))
-    return crypto.cipher_decrypt(CONFIG.CRYPTO.ALGORITHM, CONFIG.CRYPTO.PADDING, crypto_data, key, iv)
+    data = data:sub(CONFIG.CRYPTO.KEY_LEN + 1)
+    return crypto.cipher_decrypt(CONFIG.CRYPTO.ALGORITHM, CONFIG.CRYPTO.PADDING, data, key, iv)
+end
+
+-- 获取操作密钥
+function util.get_op_encrypt_key()
+    if CONFIG.CRYPTO.KEY == nil then
+        log.debug(LOG_TAG, "生成op加密密钥，参数", mobile.imei(), CONFIG.SMSYNC.SMSYNC_BEACON_KEY)
+        CONFIG.CRYPTO.KEY = util.pbkdf2(mobile.imei(), CONFIG.SMSYNC.SMSYNC_BEACON_KEY, CONFIG.CRYPTO.PBKDF2_ITER,
+            CONFIG.CRYPTO.KEY_LEN)
+    end
+    return CONFIG.CRYPTO.KEY
+end
+
+-- 获取ws密钥
+function util.get_ws_encrypt_key(salt, access_key)
+    CONFIG.WS.CRYPTO_KEY = util.pbkdf2(salt, access_key, CONFIG.CRYPTO.PBKDF2_ITER, CONFIG.CRYPTO.KEY_LEN)
+    return CONFIG.WS.CRYPTO_KEY
 end
 
 -- 压缩函数

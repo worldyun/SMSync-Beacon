@@ -5,7 +5,7 @@ _G.FWD_SERVICE = require "fwd_service"
 _G.WS_SERVICE = require "ws_service"
 _G.sys = require("sys")
 
-PROJECT = "SMSync-Beaco" -- 项目名称
+PROJECT = "SMSync-Beacon" -- 项目名称
 VERSION = "0.0.1"        -- 版本号
 log.info(PROJECT, VERSION)
 

@@ -4,21 +4,21 @@ local CONFIG = {}
 CONFIG.SMSYNC = {
     -- 默认配置, 可不设置, 由短信信令修改。信令配置优先级高于默认配置
     DEFAULT = {
-        SMSYNC_BEACO_KEY = nil,              -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位, 只能包含大小写字母和数字, 使用半角双引号包裹, 例如"FBA57224295A"
+        SMSYNC_BEACON_KEY = nil,              -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位, 使用半角双引号包裹, 例如"Fba5/22=295A"
         PHONE_NUM = "13333333333",           -- 自身电话号码
         FWD_CHANNEL = "ws",                  -- 同步类型 ws-通过WebSocket同步, sms-通过短信同步
-        WS_CONFIG = "accessKey@url",         -- WebSocket配置, FWD_CHANNEL为ws时生效 格式: 访问密钥@链接地址 例如"my_access_key@ws://example.com/websocket"
+        WS_CONFIG = "accessKey@ws://ip:port/ws",         -- WebSocket配置, FWD_CHANNEL为ws时生效 格式: 访问密钥@链接地址 例如"my_access_key@ws://example.com/websocket"
         SMS_FWD_LIST = {"1890000000"},       -- 短信转发目标列表, FWD_CHANNEL为sms时生效
-        FWD_ENABLE = false,                  -- 是否启用转发功能
-        NET_ENABLE = false,                  -- 是否启用网络功能
-        BLACKLIST = {"132*"},                -- 黑名单列表, 可以为手机号码, 也可以为号码段, 号码段以*结尾, 例如138*, 或者关键字, 以*开头结尾, 例如*测试*
+        FWD_ENABLE = true,                  -- 是否启用转发功能
+        NET_ENABLE = true,                  -- 是否启用网络功能
+        BLACKLIST = {"138*"},                -- 黑名单列表, 可以为手机号码, 也可以为号码段, 号码段以*结尾, 例如138*, 或者关键字, 以*开头结尾, 例如*测试*
         -- 添加黑名单后, 收到短信时会先判断是否在黑名单中, 如果在黑名单中则不转发
         -- 注意: 黑名单只针对转发功能, 不影响正常发送短信
         -- 示例: {"13800000000", "13900000000", "137*", "*测试*"}
     },
 
     -- 以下内容为运行时配置, 请勿修改
-    SMSYNC_BEACO_KEY = nil, -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位
+    SMSYNC_BEACON_KEY = nil, -- 设备密钥, 可不设置, 由设备自动生成, 设备启动时会打印出来, 使用Luatools可查看; 也可修改为自定义密钥, 长度12位
     PHONE_NUM = nil,        -- 自身电话号码
     FWD_CHANNEL = nil,      -- 同步类型 ws-通过WebSocket同步, sms-通过短信同步
     WS_CONFIG = nil,        -- WebSocket配置, FWD_CHANNEL为ws时生效,
@@ -47,26 +47,40 @@ CONFIG.CRYPTO = {
     ALGORITHM = "AES-128-CBC",  -- 加密算法
     KEY_LEN = 16,               -- 密钥长度
     PADDING = "PKCS7",          -- 填充方式
-    KEY = nil,                  -- 加密密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
+    PBKDF2_ITER = 1000,         -- PBKDF2迭代次数
+    KEY = nil,                  -- 设备密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
 }
 
 -- WS服务配置
 CONFIG.WS = {
     MAX_TIMESTAMP_DIFF = 300,       -- 时间戳允许的最大时间差(秒)
     AUTO_RECONNECT_TIME = 3000,     -- 自动重连时间间隔 单位ms 默认3000ms
-    AUTO_RECONNECT_ENABLE = true,   -- 自动重连使能
+    AUTO_RECONNECT_ENABLE = false,   -- 自动重连使能
+    HEARTBEAT_INTERVAL  = 30000,     -- 心跳间隔 单位ms 默认30000ms
     HEADERS_KEY = {
-        AUTHORIZATION = "Authorization",        -- sha256(accessKey)
-        SMSYNC_BEACO_ID = "SMSYNC-Beaco-ID",    -- sha256(imei)
+        AUTHORIZATION = "Authorization",        -- sha512(accessKey)
+        SMSYNC_BEACON_ID = "SMSYNC-Beacon-ID",    -- sha512(imei)
+        SALT = "Salt"                           -- 随机盐
     },
-    CRYPTO_KEY = nil,           -- 加密密钥
+    WS_SEND_COUNT = 0,              -- ws发送消息计数
+    WS_RECV_COUNT = 0,              -- ws接收消息计数
+    CRYPTO_SALT_LEN = 16,           -- 加密随机盐长度
+    CRYPTO_KEY = nil,               -- 加密密钥, 运行时由accessKey生成, 请勿修改
 }
 
 -- WS服务参数枚举
 CONFIG.WS_PARAM_ENUM = {
     TIMESTAMP = "timestamp",    -- 时间戳
-    RES_ID = "res_id",          -- 来源ID
+    RES_ID = "res_id",          -- 来源ID   hmac_sha256(res, mobile.imei() .. mobile.imsi())
     MSG = "msg",                -- 消息
+    ACTION = "action",          -- 操作码
+    COUNT = "count",            -- mgs计数，防止重放攻击
+}
+
+-- WS服务操作码枚举
+CONFIG.WS_ACTION_CODE_ENUM = {
+    MSG = "msg",                 -- 消息
+    HEARTBEAT = "heartbeat",     -- 心跳
 }
 
 -- 转发服务参数

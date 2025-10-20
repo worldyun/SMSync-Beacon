@@ -185,7 +185,7 @@ ws_service_init = function()
     UTIL.get_ws_encrypt_key(ws_salt, accessKey)
     local ws_headers = {}
     ws_headers[CONFIG.WS.HEADERS_KEY.AUTHORIZATION] = get_ws_authorization(accessKey)
-    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACON_ID] = crypto.hmac_sha256(mobile.imei(), CONFIG.CRYPTO.KEY)
+    ws_headers[CONFIG.WS.HEADERS_KEY.SMSYNC_BEACON_ID] = crypto.hmac_sha256(mobile.imei(), CONFIG.CRYPTO.KEY .. CONFIG.WS.CRYPTO_KEY)
     ws_headers[CONFIG.WS.HEADERS_KEY.SALT] = crypto.base64_encode(ws_salt)
     ws_client:headers(ws_headers)
     ws_client:connect()

@@ -48,7 +48,7 @@ CONFIG.CRYPTO = {
     KEY_LEN = 16,               -- 密钥长度
     PADDING = "PKCS7",          -- 填充方式
     PBKDF2_ITER = 1000,         -- PBKDF2迭代次数
-    KEY = nil,                  -- 设备密钥, 16字节, 不可设置, 由设备密钥生成 计算方式: sha256(imei+设备密钥)取前KEY_LEN字节
+    KEY = nil,                  -- 设备密钥, 16字节, 不可设置, 由设备密钥生成
 }
 
 -- WS服务配置
